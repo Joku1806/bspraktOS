@@ -36,7 +36,7 @@ void handle_format_specifier(const char *position, va_list *arguments) {
     PL001_UART_send('%');
   } else if (following == 'c') {
     // FIXME: undefined behaviour no no
-    char ch = va_arg(*arguments, char);
+    char ch = va_arg(*arguments, int);
     PL001_UART_send(ch);
   } else if (following == 's') {
     char *string = va_arg(*arguments, char *);
