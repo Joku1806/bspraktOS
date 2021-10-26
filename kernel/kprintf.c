@@ -13,7 +13,7 @@ char decimal_digit_to_char(uint8_t in) {
   // TODO: error handling
 }
 
-char hexdigit_to_char(uint8_t in) {
+char hexadecimal_digit_to_char(uint8_t in) {
   if (in <= 9) {
     return in + 30;
   } else if (in <= 15) {
@@ -23,8 +23,42 @@ char hexdigit_to_char(uint8_t in) {
   // TODO: error handling
 }
 
+void output_literal_percent() { PL001_UART_send('%'); }
+
+void output_character(char ch) { PL001_UART_send(ch); }
+
+void output_string(char *str) {
+  while (*str != '\0') {
+    PL001_UART_send(*str);
+    str++;
+  }
+}
+
+void output_as_hexadecimal_number(uint32_t num) {
+  while (num != 0) {
+    uint8_t digit = num & 0xF0000000;
+    PL001_UART_send(hexadecimal_digit_to_char(digit));
+    num <<= 4;
+  }
+}
+
+void output_as_decimal_number(uint32_t num) {
+  uint32_t decimal_digit_checker = 1000000000;
+  // find first decimal digit in num
+  while (decimal_digit_checker > num) {
+    decimal_digit_checker /= 10;
+  }
+
+  while (decimal_digit_checker > 0) {
+    // should fit into uint8_t I hope
+    uint8_t digit = num / decimal_digit_checker;
+    PL001_UART_send(decimal_digit_to_char(digit));
+    num -= digit * decimal_digit_checker;
+    decimal_digit_checker /= 10;
+  }
+}
+
 void handle_format_specifier(const char *position, va_list *arguments) {
-  // FIXME: Doesn't check if there is an argument left
   char following = *(position + 1);
   if (following == '\0') {
     // TODO: error handling
@@ -32,17 +66,13 @@ void handle_format_specifier(const char *position, va_list *arguments) {
   }
 
   if (following == '%') {
-    PL001_UART_send('%');
+    output_literal_percent();
   } else if (following == 'c') {
-    // FIXME: undefined behaviour no no
     char ch = va_arg(*arguments, int);
-    PL001_UART_send(ch);
+    output_character(ch);
   } else if (following == 's') {
-    char *string = va_arg(*arguments, char *);
-    while (*string != '\0') {
-      PL001_UART_send(*string);
-      string++;
-    }
+    char *str = va_arg(*arguments, char *);
+    output_string(str);
   } else if (following == 'x' || following == 'p') {
     // extra cool prefix for addresses hell yeah
     if (following == 'p') {
@@ -50,14 +80,8 @@ void handle_format_specifier(const char *position, va_list *arguments) {
       PL001_UART_send('x');
     }
 
-    // FIXME: How can we check that caller isn't passing a smaller data type
-    // than uint32_t as an argument, fucking up every other format after %x?
     uint32_t num = va_arg(*arguments, uint32_t);
-    while (num != 0) {
-      uint8_t digit = num & 0xF0000000;
-      PL001_UART_send(hexdigit_to_char(digit));
-      num <<= 4;
-    }
+    output_as_hexadecimal_number(num);
   } else if (following == 'u' || following == 'i') {
     uint32_t num = va_arg(*arguments, uint32_t);
 
@@ -70,19 +94,7 @@ void handle_format_specifier(const char *position, va_list *arguments) {
       num = (num & (1 << 30)) - (num & ~(3 << 30));
     }
 
-    uint32_t decimal_digit_checker = 1000000000;
-    // find first decimal digit in num
-    while (decimal_digit_checker > num) {
-      decimal_digit_checker /= 10;
-    }
-
-    while (decimal_digit_checker > 0) {
-      // should fit into uint8_t I hope
-      uint8_t digit = num / decimal_digit_checker;
-      PL001_UART_send(decimal_digit_to_char(digit));
-      num -= digit * decimal_digit_checker;
-      decimal_digit_checker /= 10;
-    }
+    output_as_decimal_number(num);
   } else {
     // TODO: you guessed it... error handling
     return;
@@ -92,6 +104,7 @@ void handle_format_specifier(const char *position, va_list *arguments) {
 int kprintf(const char *format, ...) {
   va_list arguments;
   va_start(arguments, format);
+  // TODO: check if we even need to make a copy
   const char *position = format;
 
   do {
