@@ -1,5 +1,4 @@
-#include "../../include/arch/bsp/kprintf.h"
-#include <stdarg.h>
+#include <kernel/kprintf.h>
 #include <stdint.h>
 
 void PL001_UART_send(char ch) {
