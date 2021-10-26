@@ -73,25 +73,23 @@ void handle_format_specifier(const char *position, va_list *arguments) {
   } else if (following == 's') {
     char *str = va_arg(*arguments, char *);
     output_string(str);
-  } else if (following == 'x' || following == 'p') {
-    // extra cool prefix for addresses hell yeah
-    if (following == 'p') {
-      PL001_UART_send('0');
-      PL001_UART_send('x');
-    }
-
+  } else if (following == 'x') {
     uint32_t num = va_arg(*arguments, uint32_t);
     output_as_hexadecimal_number(num);
-  } else if (following == 'u' || following == 'i') {
+  } else if (following == 'p') {
     uint32_t num = va_arg(*arguments, uint32_t);
+    PL001_UART_send('0');
+    PL001_UART_send('x');
+    output_as_hexadecimal_number(num);
+  } else if (following == 'u') {
+    uint32_t num = va_arg(*arguments, uint32_t);
+    output_as_decimal_number(num);
+  } else if (following == 'i') {
+    int32_t num = va_arg(*arguments, int32_t);
 
-    // if sign bit is not set, just treat it as an unsigned number
-    if (following == 'i' && num & (1 << 31)) {
+    if (num & (1 << 31)) {
       PL001_UART_send('-');
-      // is supposed to calculate 0b0x0000... - 0b00xxxx... to switch 2s
-      // complement to unsigned, but I don't know if that even works how I think
-      // it does, just leave it like this for now
-      num = (num & (1 << 30)) - (num & ~(3 << 30));
+      num = -num;
     }
 
     output_as_decimal_number(num);
