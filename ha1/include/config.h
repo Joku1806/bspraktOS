@@ -11,7 +11,7 @@
  *
  * Enthält defines und static Funktionen zum testen der
  * Implementierung. Wir tauschen diese Werte/Funktionen beim
- * Korrigieren zum Testen aus. Bitte fügt hier KEINE Weiteren
+ * Korrigieren zum Testen aus. Bitte fügt hier KEINE weiteren
  * defines oÄ ein. Ihr könnt diese Werte zum Testen natürlich
  * auch gerne selbst verändern.
  */
@@ -25,6 +25,10 @@ static inline void test_kprintf(void) {
 	 */
 	kprintf("kprintf_test\n");
 }
+
+/**
+ * Erst ab Aufgabenblatt 2 relevant
+ */
 
 #ifdef __QEMU__
 /* Werte zum testen unter QEMU */

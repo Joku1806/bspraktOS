@@ -2,14 +2,20 @@
 
 volatile unsigned int counter = 0;
 
-void increment_counter() { counter++; }
+void increment_counter() {
+	counter++;
+}
 
-void start_kernel() {
 
-  yellow_on();
+void start_kernel(){
 
-  // Endless counter
-  for (;;) {
-    increment_counter();
-  }
+	yellow_on();
+
+
+	// Endless counter
+	for (;;) {
+		increment_counter();
+	}
+
+
 }
