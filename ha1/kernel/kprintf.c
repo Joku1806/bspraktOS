@@ -1,10 +1,7 @@
+#include <kernel/drivers/pl001.h>
 #include <kernel/kprintf.h>
 #include <stdarg.h>
 #include <stdint.h>
-
-void PL001_UART_send(char ch) {
-  // TODO: Everything :^)
-}
 
 // FIXME: should be in a separate file
 int is_ascii_decimal_digit(char ch) { return ch >= '0' && ch <= '9'; }
@@ -29,13 +26,13 @@ char hexadecimal_digit_to_ascii(uint8_t in) {
   // TODO: error handling
 }
 
-void output_literal_percent() { PL001_UART_send('%'); }
+void output_literal_percent() { pl001_send('%'); }
 
-void output_character(char ch) { PL001_UART_send(ch); }
+void output_character(char ch) { pl001_send(ch); }
 
 void output_string(char *str) {
   while (*str != '\0') {
-    PL001_UART_send(*str);
+    pl001_send(*str);
     str++;
   }
 }
@@ -43,7 +40,7 @@ void output_string(char *str) {
 void output_padding(kprintf_state *state) {
   char padding = state->flags & zero_pad ? '0' : ' ';
   while (state->pad_width) {
-    PL001_UART_send(padding);
+    pl001_send(padding);
     state->pad_width--;
   }
 }
@@ -61,7 +58,7 @@ void output_as_hexadecimal_number(uint32_t num, kprintf_state *state) {
 
   while (num != 0) {
     uint8_t digit = num & 0xF0000000;
-    PL001_UART_send(hexadecimal_digit_to_ascii(digit));
+    pl001_send(hexadecimal_digit_to_ascii(digit));
     num <<= 4;
   }
 }
@@ -80,7 +77,7 @@ void output_as_decimal_number(uint32_t num, kprintf_state *state) {
 
   while (decimal_digit_checker > 0) {
     uint8_t digit = num / decimal_digit_checker;
-    PL001_UART_send(decimal_digit_to_ascii(digit));
+    pl001_send(decimal_digit_to_ascii(digit));
     num -= digit * decimal_digit_checker;
     decimal_digit_checker /= 10;
   }
@@ -115,8 +112,8 @@ void handle_format_specifier(kprintf_state *state) {
     output_as_hexadecimal_number(num, state);
   } else if (*state->position == 'p') {
     uint32_t num = va_arg(state->arguments, uint32_t);
-    PL001_UART_send('0');
-    PL001_UART_send('x');
+    pl001_send('0');
+    pl001_send('x');
     SAFE_DECREMENT(state->pad_width, 2);
     output_as_hexadecimal_number(num, state);
   } else if (*state->position == 'u') {
@@ -130,7 +127,7 @@ void handle_format_specifier(kprintf_state *state) {
       // but otherwise '-' should come after spaces.
       // This is not implemented yet because we would have to rewrite
       // output_as_decimal_number for this and I'm too lazy for that rn :^)
-      PL001_UART_send('-');
+      pl001_send('-');
       num = -num;
       SAFE_DECREMENT(state->pad_width, 1);
     }
@@ -184,7 +181,7 @@ int kprintf(const char *format, ...) {
       set_pad_width(&state);
       handle_format_specifier(&state);
     } else {
-      PL001_UART_send(*state.position);
+      pl001_send(*state.position);
     }
 
     state.position++;
