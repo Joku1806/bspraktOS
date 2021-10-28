@@ -9,10 +9,9 @@
 
 #define SAFE_DECREMENT(a, b) a = a > b ? a - b : 0
 
+// FIXME: should go in separate errno file
 typedef enum {
-  EFORMAT,
-  ESPECIFIER,
-  EINVALIDFLAG,
+  EINVAL,
 } kprintf_error;
 
 typedef enum {
@@ -24,7 +23,6 @@ typedef struct {
   const char *position;
   format_flags flags;
   uint8_t pad_width;
-  kprintf_error error;
 } kprintf_state;
 
 int kprintf(const char *format, ...);
