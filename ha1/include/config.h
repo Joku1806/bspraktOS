@@ -19,11 +19,19 @@
 /* Include-Pfad bitte gegenfalls anpassen */
 #include <kernel/kprintf.h>
 static inline void test_kprintf(void) {
-	/* Nur für Aufgabenblatt 1
-	 * Hier Test Funktion für kprintf schreiben und
-	 * nach dem vollständigen initialisieren aufrufen
-	 */
-	kprintf("kprintf_test\n");
+  /* Nur für Aufgabenblatt 1
+   * Hier Test Funktion für kprintf schreiben und
+   * nach dem vollständigen initialisieren aufrufen
+   */
+  kprintf("beef == %x\n", 0xbeef);
+  kprintf("0xff == %p\n", 0xff);
+  kprintf("1234 == %u\n", 1234);
+  kprintf("-123 == %i\n", -123);
+  kprintf("tree == %c%c%c%c\n", 't', 'r', 'e', 'e');
+  kprintf("complete %s\n", "this sentence!");
+  kprintf("00001234 == %08u\n", 1234);
+  kprintf("-0000123 == %08i\n", -123);
+  kprintf("    -123 == %8i\n", -123);
 }
 
 /**
@@ -45,6 +53,5 @@ static inline void test_kprintf(void) {
 // Systimer taktet mit 1MHz
 // 1000000 -> 1 Sekunde
 #define TIMER_INTERVAL 1000000
-
 
 #endif // _CONFIG_H_
