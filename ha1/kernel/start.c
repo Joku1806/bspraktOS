@@ -15,14 +15,13 @@ void start_kernel() {
   // Endless counter
   for (;;) {
     increment_counter();
-    char ch = pl001_receive();
+    int8_t ch = pl001_receive();
     if (ch < 0) {
       continue;
     }
-    // kprintf("Es wurde folgender Buchstabe eingegeben: %c, In Hexadezimal: %x,
-    // "
-    //         "In Dezimal: %08u",
-    //         ch, ch, ch);
-    kprintf("%c\n", ch);
+
+    kprintf("Es wurde folgender Buchstabe eingegeben: %c, In Hexadezimal: %x, "
+            "In Dezimal: %08u\n",
+            ch, ch, ch);
   }
 }
