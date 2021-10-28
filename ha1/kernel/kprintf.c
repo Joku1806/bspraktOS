@@ -1,6 +1,8 @@
 #include <kernel/drivers/pl001.h>
 #include <kernel/kprintf.h>
 #include <stdarg.h>
+#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 // in Teilen inspiriert von
@@ -9,41 +11,45 @@
 // wahrscheinlich Abzugpunkte bis in den Minusbereich hageln :^)
 
 // interne Funktionen
+size_t output_literal_percent();
+size_t output_character(char ch);
+size_t output_string(char *str);
+size_t base_less_eq_16_to_ascii(uint32_t num, uint8_t base, char *out,
+                                size_t max_length);
+size_t format_and_output_number(uint32_t num, uint8_t base, bool is_negative,
+                                kprintf_state *state);
+int handle_format_specifier(kprintf_state *state);
+
+void set_flags(kprintf_state *state);
 int is_ascii_decimal_digit(char ch);
 uint8_t ascii_to_decimal_digit(char in);
-char decimal_digit_to_ascii(uint8_t in);
-char hexadecimal_digit_to_ascii(uint8_t in);
-void output_padding(kprintf_state *state);
-void output_literal_percent();
-void output_character(char ch);
-void output_string(char *str);
-void output_as_hexadecimal_number(uint32_t num, kprintf_state *state);
-void output_as_decimal_number(uint32_t num, kprintf_state *state);
-void output_as_signed_decimal_number(int32_t num, kprintf_state *state);
-int handle_format_specifier(kprintf_state *state);
-void set_flags(kprintf_state *state);
 void set_pad_width(kprintf_state *state);
+
 void kprintf_initialize_state(kprintf_state *state, const char *format);
 void kprintf_reset_state(kprintf_state *state);
 
-// FIXME: should be in a separate file
-// Prüft, ob ch eine dezimale Ziffer ist
-int is_ascii_decimal_digit(char ch) { return ch >= '0' && ch <= '9'; }
+// Verantwortlich für %% und gibt '%' aus
+size_t output_literal_percent() {
+  pl001_send('%');
+  return sizeof(char);
+}
 
-// Konviert die ASCII-Repräsentation einer Ziffer zu der eigentlichen Ziffer. Es
-// wird angenommen, dass bei unbekanntem Input vorher is_ascii_decimal_digit()
-// aufgerufen wurde.
-uint8_t ascii_to_decimal_digit(char in) { return in - 30; }
+// Verantwortlich für %c und gibt kprintf Argument als Buchstabe aus.
+size_t output_character(char ch) {
+  pl001_send(ch);
+  return sizeof(char);
+}
 
-// Konviert eine dezimale Ziffer zu der korrespondierenden ASCII-Repräsentation.
-// Gibt -EINVAL zurück, falls in keine dezimale Ziffer ist.
-char decimal_digit_to_ascii(uint8_t in) {
-  if (in <= 9) {
-    return in + 30;
+// Verantwortlich für %s und gibt kprintf Argument als String aus.
+size_t output_string(char *str) {
+  size_t chars_written = 0;
+  while (*str != '\0') {
+    pl001_send(*str);
+    chars_written++;
+    str++;
   }
 
-  kprintf("%c is not a decimal digit.\n", in); // Rekursion!
-  return -EINVAL;
+  return chars_written;
 }
 
 // Konviert eine hexadezimale Ziffer zu der korrespondierenden
@@ -51,112 +57,79 @@ char decimal_digit_to_ascii(uint8_t in) {
 // ist.
 char hexadecimal_digit_to_ascii(uint8_t in) {
   if (in <= 9) {
-    return in + 30;
+    return in + '0';
   } else if (in <= 15) {
-    return in + 41;
+    return in + 'a' - 10;
   }
 
   kprintf("%c is not a hexadecimal digit.\n", in);
   return -EINVAL;
 }
 
-// Gibt state->pad_width viele Padding-Buchstaben aus. Wenn die zero_pad Flag
-// gesetzt ist, ist dieser Buchstabe '0', ansonsten ' '.
-void output_padding(kprintf_state *state) {
-  char padding = state->flags & zero_pad ? '0' : ' ';
-  while (state->pad_width) {
-    pl001_send(padding);
-    state->pad_width--;
-  }
+size_t base_less_eq_16_to_ascii(uint32_t num, uint8_t base, char *out,
+                                size_t max_length) {
+  size_t digits = 0;
+
+  do {
+    uint8_t digit = num % base;
+    // supports only up to base 16
+    out[digits++] = hexadecimal_digit_to_ascii(digit);
+    num /= base;
+  } while (num && (digits < max_length));
+
+  return digits;
 }
 
-// Verantwortlich für %% und gibt '%' aus
-void output_literal_percent() { pl001_send('%'); }
-
-// Verantwortlich für %c und gibt kprintf Argument als Buchstabe aus.
-void output_character(char ch) { pl001_send(ch); }
-
-// Verantwortlich für %s und gibt kprintf Argument als String aus.
-void output_string(char *str) {
-  while (*str != '\0') {
-    pl001_send(*str);
-    str++;
-  }
-}
-
-// Verantwortlich für %x/p und gibt kprintf Argument formatiert als hexadezimale
-// Zahl aus.
-void output_as_hexadecimal_number(uint32_t num, kprintf_state *state) {
-  uint8_t num_width = HEXADECIMAL_MAX_PRINT_WIDTH;
-  // consume leading zeros
-  while ((num & 0xF0000000) == 0) {
-    num <<= 4;
-    SAFE_DECREMENT(num_width, 1);
+size_t format_and_output_number(uint32_t num, uint8_t base, bool is_negative,
+                                kprintf_state *state) {
+  if (base > 16) {
+    kprintf("Base %u is greater than the allowed maximum of 16.\n", base);
+    return -EINVAL;
   }
 
-  SAFE_DECREMENT(state->pad_width, num_width);
-  output_padding(state);
+  char buffer[MAX_NUMBER_PRINT_WIDTH];
+  size_t length =
+      base_less_eq_16_to_ascii(num, base, buffer, MAX_NUMBER_PRINT_WIDTH);
 
-  while (num != 0) {
-    uint8_t digit = num & 0xF0000000;
-    pl001_send(hexadecimal_digit_to_ascii(digit));
-    num <<= 4;
-  }
-}
-
-// Verantwortlich für %u/i und gibt kprintf Argument formatiert als dezimale
-// Zahl aus.
-void output_as_decimal_number(uint32_t num, kprintf_state *state) {
-  uint8_t num_width = DECIMAL_MAX_PRINT_WIDTH;
-  uint32_t decimal_digit_checker = 1000000000;
-  // find first decimal digit in num
-  while (decimal_digit_checker > num) {
-    decimal_digit_checker /= 10;
-    SAFE_DECREMENT(num_width, 1);
+  if (state->pad_width > MAX_NUMBER_PRINT_WIDTH - length) {
+    state->pad_width = MAX_NUMBER_PRINT_WIDTH - length;
   }
 
-  SAFE_DECREMENT(state->pad_width, num_width);
-  output_padding(state);
-
-  while (decimal_digit_checker > 0) {
-    uint8_t digit = num / decimal_digit_checker;
-    pl001_send(decimal_digit_to_ascii(digit));
-    num -= digit * decimal_digit_checker;
-    decimal_digit_checker /= 10;
-  }
-}
-
-void output_as_signed_decimal_number(int32_t num, kprintf_state *state) {
-  uint8_t num_width = DECIMAL_MAX_PRINT_WIDTH;
-  uint32_t decimal_digit_checker = 1000000000;
-  uint32_t unum = num & (1 << 31) ? -num : num;
-  // find first decimal digit in num
-  while (decimal_digit_checker > unum) {
-    decimal_digit_checker /= 10;
-    SAFE_DECREMENT(num_width, 1);
+  if (is_negative) {
+    SAFE_DECREMENT(state->pad_width, 1);
   }
 
-  if (num & (1 << 31)) {
-    if (state->flags & zero_pad) {
-      pl001_send('-');
-      SAFE_DECREMENT(state->pad_width, 1);
-      output_padding(state);
-    } else {
-      SAFE_DECREMENT(state->pad_width, 1);
-      output_padding(state);
-      pl001_send('-');
+  if (state->flags & flag_hash) {
+    SAFE_DECREMENT(state->pad_width, 2);
+  }
+
+  if (state->flags & flag_zeropad) {
+    while (length < state->pad_width) {
+      buffer[length++] = '0';
     }
-  } else {
-    SAFE_DECREMENT(state->pad_width, num_width);
-    output_padding(state);
   }
 
-  while (decimal_digit_checker > 0) {
-    uint8_t digit = unum / decimal_digit_checker;
-    pl001_send(decimal_digit_to_ascii(digit));
-    unum -= digit * decimal_digit_checker;
-    decimal_digit_checker /= 10;
+  if (state->flags & flag_hash) {
+    if (base == 16) {
+      buffer[length++] = 'x';
+    }
+    buffer[length++] = '0';
   }
+
+  if (is_negative) {
+    buffer[length++] = '-';
+  }
+
+  while (length < state->pad_width) {
+    buffer[length++] = ' ';
+  }
+
+  size_t length_cpy = length;
+  while (length) {
+    pl001_send(buffer[--length]);
+  }
+
+  return length_cpy;
 }
 
 // Wirkt als Dispatch-Funktion für die verschiedenen Format-Typen und prüft
@@ -177,52 +150,55 @@ int handle_format_specifier(kprintf_state *state) {
     return -EINVAL;
   }
 
-  if (*state->position == 'p' && state->flags & zero_pad) {
-    kprintf("Zero-padding can't be used with format specifier %%%c.\n",
-            *state->position);
+  if (*state->position == 'p' && state->flags & flag_zeropad) {
+    kprintf("Zero-padding can't be used with format specifier %%p.\n");
     return -EINVAL;
   }
 
+  size_t chars_written;
   if (*state->position == '%') {
-    output_literal_percent();
+    chars_written = output_literal_percent();
   } else if (*state->position == 'c') {
     char ch = va_arg(state->arguments, int);
-    output_character(ch);
+    chars_written = output_character(ch);
   } else if (*state->position == 's') {
     char *str = va_arg(state->arguments, char *);
-    output_string(str);
+    chars_written = output_string(str);
   } else if (*state->position == 'x') {
     uint32_t num = va_arg(state->arguments, uint32_t);
-    output_as_hexadecimal_number(num, state);
+    chars_written = format_and_output_number(num, 16, false, state);
   } else if (*state->position == 'p') {
+    state->flags |= flag_hash;
     uint32_t num = va_arg(state->arguments, uint32_t);
-    pl001_send('0');
-    pl001_send('x');
-    SAFE_DECREMENT(state->pad_width, 2);
-    output_as_hexadecimal_number(num, state);
+    chars_written = format_and_output_number(num, 16, false, state);
   } else if (*state->position == 'u') {
     uint32_t num = va_arg(state->arguments, uint32_t);
-    output_as_decimal_number(num, state);
+    chars_written = format_and_output_number(num, 10, false, state);
   } else if (*state->position == 'i') {
     int32_t num = va_arg(state->arguments, int32_t);
-    output_as_signed_decimal_number(num, state);
+    bool is_negative = num & (1 << 31);
+    if (is_negative) {
+      num = -num;
+    }
+
+    chars_written = format_and_output_number(num, 10, is_negative, state);
   } else {
     return -EINVAL;
   }
 
   kprintf_reset_state(state);
-  // FIXME: return number of characters written
-  return 0;
+  return chars_written;
 }
 
 // Setzt alle angegebenen Flags, die unterstützt sind. Im Moment ist die einzige
-// unterstützte Flag '0' :D
+// unterstützte Flag '0' :D. Es gibt auch noch flag_hash, aber die wird im
+// Moment nur dazu benutzt, um intern 0x bei %p anzuhängen.
 void set_flags(kprintf_state *state) {
   int flags_finished = 0;
   while (!flags_finished) {
     switch (*state->position) {
     case '0':
-      state->flags |= zero_pad;
+      state->flags |= flag_zeropad;
       state->position++;
       break;
     default:
@@ -230,6 +206,15 @@ void set_flags(kprintf_state *state) {
     }
   }
 }
+
+// FIXME: should be in a separate file
+// Prüft, ob ch eine dezimale Ziffer ist
+int is_ascii_decimal_digit(char ch) { return ch >= '0' && ch <= '9'; }
+
+// Konviert die ASCII-Repräsentation einer Ziffer zu der eigentlichen Ziffer. Es
+// wird angenommen, dass bei unbekanntem Input vorher is_ascii_decimal_digit()
+// aufgerufen wurde.
+uint8_t ascii_to_decimal_digit(char in) { return in - '0'; }
 
 // Setzt die Feldbreite, wenn angegeben. Die Feldbreite muss als Dezimalzahl
 // angegeben sein.
@@ -266,6 +251,7 @@ void kprintf_reset_state(kprintf_state *state) {
 // flag und variable Feldbreite unterstützt. Gibt -EINVAL zurück, falls es einen
 // Syntaxfehler im angegebenen Format gibt.
 int kprintf(const char *format, ...) {
+  int chars_written = 0;
   kprintf_state state;
   va_start(state.arguments, format);
   kprintf_initialize_state(&state, format);
@@ -279,13 +265,16 @@ int kprintf(const char *format, ...) {
       if (ret < 0) {
         return ret;
       }
+
+      chars_written += ret;
     } else {
       pl001_send(*state.position);
+      chars_written++;
     }
 
     state.position++;
   } while (*state.position != '\0');
 
   va_end(state.arguments);
-  return 0;
+  return chars_written;
 }

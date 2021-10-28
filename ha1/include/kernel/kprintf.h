@@ -4,9 +4,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-#define HEXADECIMAL_MAX_PRINT_WIDTH 8
-#define DECIMAL_MAX_PRINT_WIDTH 10
-
+#define MAX_NUMBER_PRINT_WIDTH 32
 #define SAFE_DECREMENT(a, b) a = a > b ? a - b : 0
 
 // FIXME: should go in separate errno file
@@ -15,7 +13,8 @@ typedef enum {
 } kprintf_error;
 
 typedef enum {
-  zero_pad = 1 << 0,
+  flag_zeropad = 1 << 0,
+  flag_hash = 1 << 1,
 } format_flags;
 
 typedef struct {
