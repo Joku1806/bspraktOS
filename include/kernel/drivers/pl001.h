@@ -27,7 +27,8 @@ typedef enum {
 
 typedef enum {
   BUSY = 1 << 3,
-  RXFE = 1 << 7,
+  RXFE = 1 << 4,
+  TXFF = 1 << 5,
 } FR_FLAGS;
 
 int8_t pl001_receive();

@@ -5,15 +5,15 @@ volatile uint32_t *pl001_register(register_offsets offset) {
 }
 
 void pl001_wait_until_transmission_complete() {
-  while (*pl001_register(FR) & BUSY) {
+  while (*pl001_register(FR) & TXFF) {
   }
 }
 
 int8_t pl001_receive() {
-  // TODO: is that the right name for the flag?
-  if (!(*pl001_register(FR) & RXFE)) {
+  if (*pl001_register(FR) & RXFE) {
     return -1;
   }
+
   return *pl001_register(DR);
 }
 
