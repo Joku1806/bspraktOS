@@ -3,6 +3,11 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+// in Teilen inspiriert von
+// https://github.com/mpaland/printf/blob/master/printf.c und NICHT von der libc
+// printf, wie im Aufgabenblatt empfohlen. Wenn wir das gemacht hätten, würde es
+// wahrscheinlich Abzugpunkte bis in den Minusbereich hageln :^)
+
 // interne Funktionen
 int is_ascii_decimal_digit(char ch);
 uint8_t ascii_to_decimal_digit(char in);
