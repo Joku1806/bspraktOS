@@ -19,6 +19,7 @@ void output_character(char ch);
 void output_string(char *str);
 void output_as_hexadecimal_number(uint32_t num, kprintf_state *state);
 void output_as_decimal_number(uint32_t num, kprintf_state *state);
+void output_as_signed_decimal_number(int32_t num, kprintf_state *state);
 int handle_format_specifier(kprintf_state *state);
 void set_flags(kprintf_state *state);
 void set_pad_width(kprintf_state *state);
@@ -125,10 +126,44 @@ void output_as_decimal_number(uint32_t num, kprintf_state *state) {
   }
 }
 
+void output_as_signed_decimal_number(int32_t num, kprintf_state *state) {
+  uint8_t num_width = DECIMAL_MAX_PRINT_WIDTH;
+  uint32_t decimal_digit_checker = 1000000000;
+  uint32_t unum = num & (1 << 31) ? -num : num;
+  // find first decimal digit in num
+  while (decimal_digit_checker > unum) {
+    decimal_digit_checker /= 10;
+    SAFE_DECREMENT(num_width, 1);
+  }
+
+  if (num & (1 << 31)) {
+    if (state->flags & zero_pad) {
+      pl001_send('-');
+      SAFE_DECREMENT(state->pad_width, 1);
+      output_padding(state);
+    } else {
+      SAFE_DECREMENT(state->pad_width, 1);
+      output_padding(state);
+      pl001_send('-');
+    }
+  } else {
+    SAFE_DECREMENT(state->pad_width, num_width);
+    output_padding(state);
+  }
+
+  while (decimal_digit_checker > 0) {
+    uint8_t digit = unum / decimal_digit_checker;
+    pl001_send(decimal_digit_to_ascii(digit));
+    unum -= digit * decimal_digit_checker;
+    decimal_digit_checker /= 10;
+  }
+}
+
 // Wirkt als Dispatch-Funktion für die verschiedenen Format-Typen und prüft
-// außerdem, ob die gewählten Flags kompatibel mit dem Format-Specifier sind.
-// Wenn das nicht so ist, wird -EINVAL zurückgegeben. Es wird auch -EINVAL
-// zurückgegeben, falls *state->position kein valider Format-Specifier ist.
+// außerdem, ob die gewählten Flags kompatibel mit dem Format-Specifier
+// sind. Wenn das nicht so ist, wird -EINVAL zurückgegeben. Es wird auch
+// -EINVAL zurückgegeben, falls *state->position kein valider
+// Format-Specifier ist.
 int handle_format_specifier(kprintf_state *state) {
   if (*state->position == '\0') {
     return -EINVAL;
@@ -170,18 +205,7 @@ int handle_format_specifier(kprintf_state *state) {
     output_as_decimal_number(num, state);
   } else if (*state->position == 'i') {
     int32_t num = va_arg(state->arguments, int32_t);
-
-    if (num & (1 << 31)) {
-      // FIXME: if flag_zero is set, zeros should come after '-',
-      // but otherwise '-' should come after spaces.
-      // This is not implemented yet because we would have to rewrite
-      // output_as_decimal_number for this and I'm too lazy for that rn :^)
-      pl001_send('-');
-      num = -num;
-      SAFE_DECREMENT(state->pad_width, 1);
-    }
-
-    output_as_decimal_number(num, state);
+    output_as_signed_decimal_number(num, state);
   } else {
     return -EINVAL;
   }
