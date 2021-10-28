@@ -1,3 +1,4 @@
+#include "kernel/kprintf.h"
 #include <arch/bsp/yellow_led.h>
 #include <config.h>
 #include <kernel/drivers/pl001.h>
@@ -15,8 +16,13 @@ void start_kernel() {
   for (;;) {
     increment_counter();
     char ch = pl001_receive();
-    kprintf("Es wurde folgender Buchstabe eingegeben: %c, In Hexadezimal: %x, "
-            "In Dezimal: %08u",
-            ch, ch, ch);
+    if (ch < 0) {
+      continue;
+    }
+    // kprintf("Es wurde folgender Buchstabe eingegeben: %c, In Hexadezimal: %x,
+    // "
+    //         "In Dezimal: %08u",
+    //         ch, ch, ch);
+    kprintf("%c\n", ch);
   }
 }
