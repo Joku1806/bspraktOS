@@ -32,6 +32,8 @@ static inline void test_kprintf(void) {
   kprintf("00001234 == %08u\n", 1234);
   kprintf("-0000123 == %08i\n", -123);
   kprintf("    -123 == %8i\n", -123);
+  int length = kprintf("Dieser Satz hat %u Buchstaben.\n", 31);
+  kprintf("Der letzte Satz hatte %u Buchstaben.\n", length);
 }
 
 /**
