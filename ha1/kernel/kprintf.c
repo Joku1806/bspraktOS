@@ -21,7 +21,7 @@ size_t format_and_output_number(uint32_t num, uint8_t base, bool is_negative,
 int handle_format_specifier(kprintf_state *state);
 
 void set_flags(kprintf_state *state);
-int is_ascii_decimal_digit(char ch);
+bool is_ascii_decimal_digit(char ch);
 uint8_t ascii_to_decimal_digit(char in);
 void set_pad_width(kprintf_state *state);
 
@@ -95,15 +95,15 @@ size_t format_and_output_number(uint32_t num, uint8_t base, bool is_negative,
     state->pad_width = MAX_NUMBER_PRINT_WIDTH - length;
   }
 
-  if (is_negative) {
-    SAFE_DECREMENT(state->pad_width, 1);
-  }
-
-  if (state->flags & flag_hash) {
-    SAFE_DECREMENT(state->pad_width, 2);
-  }
-
   if (state->flags & flag_zeropad) {
+    if (state->flags & flag_hash) {
+      SAFE_DECREMENT(state->pad_width, 2);
+    }
+
+    if (is_negative) {
+      SAFE_DECREMENT(state->pad_width, 1);
+    }
+
     while (length < state->pad_width) {
       buffer[length++] = '0';
     }
@@ -176,7 +176,7 @@ int handle_format_specifier(kprintf_state *state) {
     chars_written = format_and_output_number(num, 10, false, state);
   } else if (*state->position == 'i') {
     int32_t num = va_arg(state->arguments, int32_t);
-    bool is_negative = num & (1 << 31);
+    bool is_negative = num < 0;
     if (is_negative) {
       num = -num;
     }
@@ -187,6 +187,8 @@ int handle_format_specifier(kprintf_state *state) {
   }
 
   kprintf_reset_state(state);
+  // durch cast von size_t -> int gehen möglicherweise Informationen verloren,
+  // obwohl das schon sehr unwahrscheinlich ist
   return chars_written;
 }
 
@@ -209,7 +211,7 @@ void set_flags(kprintf_state *state) {
 
 // FIXME: should be in a separate file
 // Prüft, ob ch eine dezimale Ziffer ist
-int is_ascii_decimal_digit(char ch) { return ch >= '0' && ch <= '9'; }
+bool is_ascii_decimal_digit(char ch) { return ch >= '0' && ch <= '9'; }
 
 // Konviert die ASCII-Repräsentation einer Ziffer zu der eigentlichen Ziffer. Es
 // wird angenommen, dass bei unbekanntem Input vorher is_ascii_decimal_digit()
