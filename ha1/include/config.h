@@ -29,9 +29,12 @@ static inline void test_kprintf(void) {
   kprintf("-123 == %i\n", -123);
   kprintf("tree == %c%c%c%c\n", 't', 'r', 'e', 'e');
   kprintf("complete %s\n", "this sentence!");
+  kprintf("I’ll have two number %us, a number %u large, a number %u with extra dip, a number %i, two number %u%c, one with cheese, and a large %s.\n", 9, 9, 6, 7, 45, 's', "soda");
   kprintf("00001234 == %08u\n", 1234);
   kprintf("-0000123 == %08i\n", -123);
   kprintf("    -123 == %8i\n", -123);
+  kprintf("      1234567890 == %16u\n", 1234567890);
+  kprintf("1234567890 == %8u\n", 1234567890);
   int length = kprintf("Dieser Satz hat %u Buchstaben.\n", 31);
   kprintf("Der letzte Satz hatte %u Buchstaben.\n", length);
 }
