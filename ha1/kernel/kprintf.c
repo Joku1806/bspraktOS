@@ -186,7 +186,6 @@ int handle_format_specifier(kprintf_state *state) {
     return -EINVAL;
   }
 
-  kprintf_reset_state(state);
   // durch cast von size_t -> int gehen möglicherweise Informationen verloren,
   // obwohl das schon sehr unwahrscheinlich ist
   return chars_written;
@@ -269,6 +268,7 @@ int kprintf(const char *format, ...) {
       }
 
       chars_written += ret;
+      kprintf_reset_state(&state);
     } else {
       pl001_send(*state.position);
       chars_written++;
