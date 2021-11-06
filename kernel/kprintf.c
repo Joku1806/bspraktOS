@@ -198,12 +198,12 @@ void set_flags(kprintf_state *state) {
   int flags_finished = 0;
   while (!flags_finished) {
     switch (*state->position) {
-    case '0':
-      state->flags |= flag_zeropad;
-      state->position++;
-      break;
-    default:
-      flags_finished = 1;
+      case '0':
+        state->flags |= flag_zeropad;
+        state->position++;
+        break;
+      default:
+        flags_finished = 1;
     }
   }
 }
