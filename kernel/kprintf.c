@@ -259,7 +259,7 @@ __attribute__((format(printf, 1, 2))) int kprintf(const char *format, ...) {
   va_start(state.arguments, format);
   kprintf_initialize_state(&state, format);
 
-  do {
+  while (*state.position != '\0') {
     if (*state.position == '%') {
       state.position++;
       set_flags(&state);
@@ -278,7 +278,7 @@ __attribute__((format(printf, 1, 2))) int kprintf(const char *format, ...) {
     }
 
     state.position++;
-  } while (*state.position != '\0');
+  }
 
   va_end(state.arguments);
   return chars_written;
