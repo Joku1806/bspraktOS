@@ -183,6 +183,7 @@ int handle_format_specifier(kprintf_state *state) {
 
     chars_written = format_and_output_number(num, 10, is_negative, state);
   } else {
+    kprintf("kprintf doesn't support format specifier %%%c\n", *state->position);
     return -EINVAL;
   }
 
