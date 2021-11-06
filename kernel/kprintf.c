@@ -139,6 +139,7 @@ size_t format_and_output_number(uint32_t num, uint8_t base, bool is_negative,
 // Format-Specifier ist.
 int handle_format_specifier(kprintf_state *state) {
   if (*state->position == '\0') {
+    kprintf("Dangling %% is not allowed.");
     return -EINVAL;
   }
 
@@ -183,7 +184,7 @@ int handle_format_specifier(kprintf_state *state) {
 
     chars_written = format_and_output_number(num, 10, is_negative, state);
   } else {
-    kprintf("kprintf doesn't support format specifier %%%c\n", *state->position);
+    kprintf("kprintf doesn't support format specifier %%%c.\n", *state->position);
     return -EINVAL;
   }
 
@@ -265,6 +266,7 @@ __attribute__((format(printf, 1, 2))) int kprintf(const char *format, ...) {
       set_pad_width(&state);
       int ret = handle_format_specifier(&state);
       if (ret < 0) {
+        va_end(state.arguments);
         return ret;
       }
 
