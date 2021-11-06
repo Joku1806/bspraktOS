@@ -251,7 +251,7 @@ void kprintf_reset_state(kprintf_state *state) {
 // Von den normalen printf-Features werden %c/s/%/x/p/u/i sowie die zero_pad
 // flag und variable Feldbreite unterstützt. Gibt -EINVAL zurück, falls es einen
 // Syntaxfehler im angegebenen Format gibt.
-int kprintf(const char *format, ...) {
+__attribute__((format(printf, 1, 2))) int kprintf(const char *format, ...) {
   int chars_written = 0;
   kprintf_state state;
   va_start(state.arguments, format);
