@@ -9,7 +9,7 @@
 
 // FIXME: should go in separate errno file
 typedef enum {
-  EINVAL,
+  EINVAL = 1,
 } kprintf_error;
 
 typedef enum {
