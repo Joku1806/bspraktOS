@@ -45,6 +45,7 @@ static inline void test_kprintf(void) {
   kprintf("%016p\n", 0xdeadc0de);
   kprintf("%8s\n", "Padding!");
   kprintf("Haha was passiert wenn wir ein %% als letzten Buchstaben haben? %");
+  kprintf("Field width overdrive!!! %90001u\n", 9034);
 }
 
 /**
