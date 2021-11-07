@@ -145,7 +145,7 @@ size_t format_and_output_number(unsigned long num, uint8_t base, bool is_negativ
 // Format-Specifier ist.
 int handle_format_specifier(kprintf_state *state) {
   if (*state->position == '\0') {
-    kprintf("Dangling %% is not allowed.");
+    kprintf("Dangling %% is not allowed.\n");
     return -EINVAL;
   }
 
