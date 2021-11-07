@@ -16,7 +16,7 @@ size_t output_character(char ch);
 size_t output_string(char *str);
 size_t base_less_eq_16_to_ascii(uint32_t num, uint8_t base, char *out,
                                 size_t max_length);
-size_t format_and_output_number(uint32_t num, uint8_t base, bool is_negative,
+size_t format_and_output_number(unsigned long num, uint8_t base, bool is_negative,
                                 kprintf_state *state);
 int handle_format_specifier(kprintf_state *state);
 
@@ -86,7 +86,7 @@ size_t base_less_eq_16_to_ascii(uint32_t num, uint8_t base, char *out,
 
 // Konvertiert num in ASCII-Darstellung und gibt diese mit optionaler
 // Feldbreite (zusammen maximal MAX_NUMBER_PRINT_WIDTH Zeichen) formatiert aus.
-size_t format_and_output_number(uint32_t num, uint8_t base, bool is_negative,
+size_t format_and_output_number(unsigned long num, uint8_t base, bool is_negative,
                                 kprintf_state *state) {
   if (base > 16) {
     kprintf("Base %u is greater than the allowed maximum of 16.\n", base);
@@ -172,17 +172,17 @@ int handle_format_specifier(kprintf_state *state) {
     char *str = va_arg(state->arguments, char *);
     chars_written = output_string(str);
   } else if (*state->position == 'x') {
-    uint32_t num = va_arg(state->arguments, uint32_t);
-    chars_written = format_and_output_number(num, 16, false, state);
+    unsigned int hex = va_arg(state->arguments, unsigned int);
+    chars_written = format_and_output_number(hex, 16, false, state);
   } else if (*state->position == 'p') {
     state->flags |= flag_hash;
-    uint32_t num = va_arg(state->arguments, uint32_t);
-    chars_written = format_and_output_number(num, 16, false, state);
+    void *ptr = va_arg(state->arguments, void *);
+    chars_written = format_and_output_number((unsigned long)ptr, 16, false, state);
   } else if (*state->position == 'u') {
-    uint32_t num = va_arg(state->arguments, uint32_t);
+    unsigned int num = va_arg(state->arguments, unsigned int);
     chars_written = format_and_output_number(num, 10, false, state);
   } else if (*state->position == 'i') {
-    int32_t num = va_arg(state->arguments, int32_t);
+    int num = va_arg(state->arguments, int);
     bool is_negative = num < 0;
     if (is_negative) {
       num = -num;
