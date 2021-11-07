@@ -23,7 +23,7 @@ int handle_format_specifier(kprintf_state *state);
 void set_flags(kprintf_state *state);
 bool is_ascii_decimal_digit(char ch);
 uint8_t ascii_to_decimal_digit(char in);
-void set_pad_width(kprintf_state *state);
+int set_pad_width(kprintf_state *state);
 
 void kprintf_initialize_state(kprintf_state *state, const char *format);
 void kprintf_reset_state(kprintf_state *state);
@@ -226,15 +226,24 @@ bool is_ascii_decimal_digit(char ch) { return ch >= '0' && ch <= '9'; }
 uint8_t ascii_to_decimal_digit(char in) { return in - '0'; }
 
 // Setzt die Feldbreite, wenn angegeben. Die Feldbreite muss als Dezimalzahl
-// angegeben sein.
-void set_pad_width(kprintf_state *state) {
-  // FIXME: Doesn't check for overflow, especially important since
-  // state->pad_width is an uint8_t
+// angegeben sein und in einen uint8_t passen. Sollte das nicht so sein,
+// wird -EINVAL zurückgegeben.
+int set_pad_width(kprintf_state *state) {
+  uint8_t converted = 0;
   while (is_ascii_decimal_digit(*state->position)) {
-    state->pad_width *= 10;
-    state->pad_width += ascii_to_decimal_digit(*state->position);
+    uint8_t digit = ascii_to_decimal_digit(*state->position);
+    if (converted * 10 + digit > UINT8_MAX) {
+      kprintf("Specified field width is too big to be stored in an uint8_t.\n");
+      return -EINVAL;
+    }
+
+    converted *= 10;
+    converted += digit;
     state->position++;
   }
+
+  state->pad_width = converted;
+  return 0;
 }
 
 // Initialisiert ein gemeinsames struct, um Informationen über die
@@ -261,6 +270,7 @@ void kprintf_reset_state(kprintf_state *state) {
 // Syntaxfehler im angegebenen Format gibt.
 __attribute__((format(printf, 1, 2))) int kprintf(const char *format, ...) {
   int chars_written = 0;
+  int ret;
   kprintf_state state;
   va_start(state.arguments, format);
   kprintf_initialize_state(&state, format);
@@ -269,8 +279,13 @@ __attribute__((format(printf, 1, 2))) int kprintf(const char *format, ...) {
     if (*state.position == '%') {
       state.position++;
       set_flags(&state);
-      set_pad_width(&state);
-      int ret = handle_format_specifier(&state);
+      ret = set_pad_width(&state);
+      if (ret < 0) {
+        va_end(state.arguments);
+        return ret;
+      }
+
+      ret = handle_format_specifier(&state);
       if (ret < 0) {
         va_end(state.arguments);
         return ret;
