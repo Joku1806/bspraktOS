@@ -152,7 +152,7 @@ int handle_format_specifier(kprintf_state *state) {
   if (!(*state->position == 'i' || *state->position == 'u' ||
         *state->position == 'x' || *state->position == 'p') &&
       state->pad_width) {
-    kprintf("Width field can't be used with format specifier %%%c.\n",
+    kprintf("Field width can't be used with format specifier %%%c.\n",
             *state->position);
     return -EINVAL;
   }
