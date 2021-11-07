@@ -66,6 +66,10 @@ char hexadecimal_digit_to_ascii(uint8_t in) {
   return -EINVAL;
 }
 
+// Konvertiert eine Zahl beliebiger Basis <= 16 zu
+// der ASCII-Darstellung dieser Zahl. Die Darstellung
+// ist aufgrund der Umwandlungsmethode umgekehrt, d.h.
+// 12345 => "54321".
 size_t base_less_eq_16_to_ascii(uint32_t num, uint8_t base, char *out,
                                 size_t max_length) {
   size_t digits = 0;
@@ -80,6 +84,8 @@ size_t base_less_eq_16_to_ascii(uint32_t num, uint8_t base, char *out,
   return digits;
 }
 
+// Konvertiert num in ASCII-Darstellung und gibt diese mit optionaler
+// Feldbreite (zusammen maximal MAX_NUMBER_PRINT_WIDTH Zeichen) formatiert aus.
 size_t format_and_output_number(uint32_t num, uint8_t base, bool is_negative,
                                 kprintf_state *state) {
   if (base > 16) {
