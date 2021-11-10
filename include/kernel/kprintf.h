@@ -7,11 +7,6 @@
 #define MAX_NUMBER_PRINT_WIDTH 32
 #define SAFE_DECREMENT(a, b) a = a > b ? a - b : 0
 
-// FIXME: should go in separate errno file
-typedef enum {
-  EINVAL = 1,
-} kprintf_error;
-
 typedef enum {
   flag_zeropad = 1 << 0,
   flag_hash = 1 << 1,

@@ -1,4 +1,4 @@
-#include <kernel/drivers/pl001.h>
+#include <arch/bsp/pl001.h>
 
 volatile uint32_t *pl001_register(register_offsets offset) {
   return (volatile uint32_t *)(UART_BASE + offset);

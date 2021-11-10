@@ -1,10 +1,10 @@
-#include <kernel/drivers/pl001.h>
+#include <arch/bsp/pl001.h>
+#include <kernel/debug.h>
 #include <kernel/kprintf.h>
-#include <stdarg.h>
+#include <lib/character_types.h>
+#include <lib/error_codes.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <stdint.h>
-
 // in Teilen inspiriert von
 // https://github.com/mpaland/printf/blob/master/printf.c und NICHT von der libc
 // printf, wie im Aufgabenblatt empfohlen. Wenn wir das gemacht hätten, würde es
@@ -16,13 +16,11 @@ size_t output_character(char ch);
 size_t output_string(char *str);
 size_t base_less_eq_16_to_ascii(uint32_t num, uint8_t base, char *out,
                                 size_t max_length);
-size_t format_and_output_number(unsigned long num, uint8_t base, bool is_negative,
-                                kprintf_state *state);
+size_t format_and_output_number(unsigned long num, uint8_t base,
+                                bool is_negative, kprintf_state *state);
 int handle_format_specifier(kprintf_state *state);
 
 void set_flags(kprintf_state *state);
-bool is_ascii_decimal_digit(char ch);
-uint8_t ascii_to_decimal_digit(char in);
 int set_pad_width(kprintf_state *state);
 
 void kprintf_initialize_state(kprintf_state *state, const char *format);
@@ -52,20 +50,6 @@ size_t output_string(char *str) {
   return chars_written;
 }
 
-// Konviert eine hexadezimale Ziffer zu der korrespondierenden
-// ASCII-Repräsentation. Gibt -EINVAL zurück, falls in keine hexadezimale Ziffer
-// ist.
-char hexadecimal_digit_to_ascii(uint8_t in) {
-  if (in <= 9) {
-    return in + '0';
-  } else if (in <= 15) {
-    return in + 'a' - 10;
-  }
-
-  kprintf("%c is not a hexadecimal digit.\n", in);
-  return -EINVAL;
-}
-
 // Konvertiert eine Zahl beliebiger Basis <= 16 zu
 // der ASCII-Darstellung dieser Zahl. Die Darstellung
 // ist aufgrund der Umwandlungsmethode umgekehrt, d.h.
@@ -77,7 +61,7 @@ size_t base_less_eq_16_to_ascii(uint32_t num, uint8_t base, char *out,
   do {
     uint8_t digit = num % base;
     // supports only up to base 16
-    out[digits++] = hexadecimal_digit_to_ascii(digit);
+    out[digits++] = to_ascii_hexadecimal_digit(digit);
     num /= base;
   } while (num && (digits < max_length));
 
@@ -86,10 +70,10 @@ size_t base_less_eq_16_to_ascii(uint32_t num, uint8_t base, char *out,
 
 // Konvertiert num in ASCII-Darstellung und gibt diese mit optionaler
 // Feldbreite (zusammen maximal MAX_NUMBER_PRINT_WIDTH Zeichen) formatiert aus.
-size_t format_and_output_number(unsigned long num, uint8_t base, bool is_negative,
-                                kprintf_state *state) {
+size_t format_and_output_number(unsigned long num, uint8_t base,
+                                bool is_negative, kprintf_state *state) {
   if (base > 16) {
-    kprintf("Base %u is greater than the allowed maximum of 16.\n", base);
+    warnln("Base %u is greater than the allowed maximum of 16.", base);
     return -EINVAL;
   }
 
@@ -145,20 +129,20 @@ size_t format_and_output_number(unsigned long num, uint8_t base, bool is_negativ
 // Format-Specifier ist.
 int handle_format_specifier(kprintf_state *state) {
   if (*state->position == '\0') {
-    kprintf("Dangling %% is not allowed.\n");
+    warnln("Dangling %% is not allowed.");
     return -EINVAL;
   }
 
   if (!(*state->position == 'i' || *state->position == 'u' ||
         *state->position == 'x' || *state->position == 'p') &&
       state->pad_width) {
-    kprintf("Field width can't be used with format specifier %%%c.\n",
-            *state->position);
+    warnln("Field width can't be used with format specifier %%%c.",
+           *state->position);
     return -EINVAL;
   }
 
   if (*state->position == 'p' && state->flags & flag_zeropad) {
-    kprintf("Zero-padding can't be used with format specifier %%p.\n");
+    warnln("Zero-padding can't be used with format specifier %%p.");
     return -EINVAL;
   }
 
@@ -177,7 +161,8 @@ int handle_format_specifier(kprintf_state *state) {
   } else if (*state->position == 'p') {
     state->flags |= flag_hash;
     void *ptr = va_arg(state->arguments, void *);
-    chars_written = format_and_output_number((unsigned long)ptr, 16, false, state);
+    chars_written =
+        format_and_output_number((unsigned long)ptr, 16, false, state);
   } else if (*state->position == 'u') {
     unsigned int num = va_arg(state->arguments, unsigned int);
     chars_written = format_and_output_number(num, 10, false, state);
@@ -190,7 +175,7 @@ int handle_format_specifier(kprintf_state *state) {
 
     chars_written = format_and_output_number(num, 10, is_negative, state);
   } else {
-    kprintf("kprintf doesn't support format specifier %%%c.\n", *state->position);
+    warnln("kprintf doesn't support format specifier %%%c.", *state->position);
     return -EINVAL;
   }
 
@@ -206,24 +191,15 @@ void set_flags(kprintf_state *state) {
   int flags_finished = 0;
   while (!flags_finished) {
     switch (*state->position) {
-      case '0':
-        state->flags |= flag_zeropad;
-        state->position++;
-        break;
-      default:
-        flags_finished = 1;
+    case '0':
+      state->flags |= flag_zeropad;
+      state->position++;
+      break;
+    default:
+      flags_finished = 1;
     }
   }
 }
-
-// FIXME: should be in a separate file
-// Prüft, ob ch eine dezimale Ziffer ist
-bool is_ascii_decimal_digit(char ch) { return ch >= '0' && ch <= '9'; }
-
-// Konviert die ASCII-Repräsentation einer Ziffer zu der eigentlichen Ziffer. Es
-// wird angenommen, dass bei unbekanntem Input vorher is_ascii_decimal_digit()
-// aufgerufen wurde.
-uint8_t ascii_to_decimal_digit(char in) { return in - '0'; }
 
 // Setzt die Feldbreite, wenn angegeben. Die Feldbreite muss als Dezimalzahl
 // angegeben sein und in einen uint8_t passen. Sollte das nicht so sein,
@@ -231,9 +207,9 @@ uint8_t ascii_to_decimal_digit(char in) { return in - '0'; }
 int set_pad_width(kprintf_state *state) {
   uint8_t converted = 0;
   while (is_ascii_decimal_digit(*state->position)) {
-    uint8_t digit = ascii_to_decimal_digit(*state->position);
+    uint8_t digit = parse_ascii_decimal_digit(*state->position);
     if (converted * 10 + digit > UINT8_MAX) {
-      kprintf("Specified field width is too big to be stored in an uint8_t.\n");
+      warnln("Specified field width is too big to be stored in an uint8_t.");
       return -EINVAL;
     }
 
