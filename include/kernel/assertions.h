@@ -5,12 +5,15 @@
 #define ASSERTIONS_H
 
 #include "debug.h"
+#include <arch/cpu/CPU.h>
+#include <stdbool.h>
 
 #define VERIFY(expression)                                                     \
   do {                                                                         \
     if (!(expression)) {                                                       \
-      warnln("ASSERTION FAILED: %s\n%s:%u in %s\n", #expression, __FILE__,     \
+      warnln("ASSERTION FAILED: %s\n%s:%u in %s", #expression, __FILE__,       \
              __LINE__, __PRETTY_FUNCTION__);                                   \
+      halt_cpu();                                                              \
     }                                                                          \
   } while (0)
 
