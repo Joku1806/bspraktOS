@@ -45,7 +45,16 @@
 BIN_LSG = 
 
 # Hier eure source files hinzufügen
-SRC = arch/cpu/entry.S arch/cpu/regcheck_asm.S kernel/start.c kernel/kprintf.c kernel/regcheck.c lib/character_types.c arch/bsp/pl001.c
+SRC = arch/cpu/entry.S \
+			arch/cpu/interrupt_vector_table.S \
+			arch/cpu/regcheck_asm.S \
+			arch/cpu/CPU.c \
+			arch/bsp/pl001.c \
+			kernel/start.c \
+			kernel/interrupt.c \
+			kernel/kprintf.c \
+			kernel/regcheck.c \
+			lib/character_types.c
 
 # Hier separate user files hinzufügen
 USRC = user/main.c
