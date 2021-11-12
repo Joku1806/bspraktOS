@@ -1,3 +1,5 @@
+#include <arch/cpu/stack_defines.h>
+
 .section .init
 
 .global _start
@@ -32,10 +34,10 @@ _enableAlignCheck:
 	/* neues SCTLR speichern */
 	mcr p15, 0, r0, c1, c0, 0
 
-
 _bsprak:
+  bl _setup_ivt
 	/* Validen Stack Pointer setzten */
-	ldr sp,=0x20000
+	ldr sp,=ENTRY_SP
 	/* Zu c Code springen */
 	bl  start_kernel
 .Lend:
