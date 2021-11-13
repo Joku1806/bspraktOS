@@ -1,7 +1,11 @@
+#include <arch/cpu/CPU.h>
 #include <kernel/kprintf.h>
 
 void reset_interrupt_handler() {
   kprintf("Willkommen im Reset Interrupt Handler!\n");
+  // FIXME: sollte System neustarten, was wir gerade machen
+  // ist eine Endlosschleife :D
+  halt_cpu();
 }
 
 void undefined_instruction_interrupt_handler() {
