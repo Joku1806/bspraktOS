@@ -7,14 +7,12 @@
 // Prüft, ob ch eine dezimale Ziffer ist
 bool is_ascii_decimal_digit(char ch);
 
-// Konviert die ASCII-Repräsentation einer Ziffer zu der eigentlichen Ziffer. Es
-// wird angenommen, dass bei unbekanntem Input vorher is_ascii_decimal_digit()
-// aufgerufen wurde.
-uint8_t parse_ascii_decimal_digit(char in);
+// Konviert die ASCII-Repräsentation einer dezimalen Ziffer zu der eigentlichen
+// Zahl.
+uint8_t parse_ascii_decimal_digit(char ch);
 
 // Konviert eine hexadezimale Ziffer zu der korrespondierenden
-// ASCII-Repräsentation. Gibt -EINVAL zurück, falls in keine hexadezimale Ziffer
-// ist.
+// ASCII-Repräsentation.
 char to_ascii_hexadecimal_digit(uint8_t in);
 
 #endif

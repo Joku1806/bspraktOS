@@ -1,17 +1,21 @@
-#include <kernel/debug.h>
+#include <lib/assertions.h>
 #include <lib/character_types.h>
+#include <lib/debug.h>
 #include <lib/error_codes.h>
 
 bool is_ascii_decimal_digit(char ch) { return ch >= '0' && ch <= '9'; }
-uint8_t parse_ascii_decimal_digit(char in) { return in - '0'; }
+
+uint8_t parse_ascii_decimal_digit(char ch) {
+  VERIFY(ch >= '0' && ch <= '9');
+  return ch - '0';
+}
 
 char to_ascii_hexadecimal_digit(uint8_t in) {
+  VERIFY(in >= 0 && in <= 15);
+
   if (in <= 9) {
     return in + '0';
-  } else if (in <= 15) {
+  } else {
     return in + 'a' - 10;
   }
-
-  warnln("%c is not a hexadecimal digit.\n", in);
-  return -EINVAL;
 }
