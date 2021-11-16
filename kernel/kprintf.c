@@ -102,6 +102,8 @@ size_t format_and_output_number(unsigned long num, uint8_t base,
   if (state->flags & flag_hash) {
     if (base == 16) {
       buffer[length++] = 'x';
+    } else if (base == 2) {
+      buffer[length++] = 'b';
     }
     buffer[length++] = '0';
   }
@@ -134,7 +136,8 @@ int handle_format_specifier(kprintf_state *state) {
   }
 
   if (!(*state->position == 'i' || *state->position == 'u' ||
-        *state->position == 'x' || *state->position == 'p') &&
+        *state->position == 'b' || *state->position == 'x' ||
+        *state->position == 'p') &&
       state->pad_width) {
     warnln("Field width can't be used with format specifier %%%c.",
            *state->position);
@@ -162,6 +165,12 @@ int handle_format_specifier(kprintf_state *state) {
   case 's': {
     char *str = va_arg(state->arguments, char *);
     chars_written = output_string(str);
+    break;
+  }
+
+  case 'b': {
+    unsigned int bin = va_arg(state->arguments, unsigned int);
+    chars_written = format_and_output_number(bin, 2, false, state);
     break;
   }
 
@@ -214,6 +223,10 @@ void set_flags(kprintf_state *state) {
     switch (*state->position) {
     case '0':
       state->flags |= flag_zeropad;
+      state->position++;
+      break;
+    case '#':
+      state->flags |= flag_hash;
       state->position++;
       break;
     default:
