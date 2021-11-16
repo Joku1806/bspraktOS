@@ -81,8 +81,8 @@ size_t format_and_output_number(unsigned long num, uint8_t base,
   size_t length =
       base_less_eq_16_to_ascii(num, base, buffer, MAX_NUMBER_PRINT_WIDTH);
 
-  if (state->pad_width > MAX_NUMBER_PRINT_WIDTH - length) {
-    state->pad_width = MAX_NUMBER_PRINT_WIDTH - length;
+  if (state->pad_width > MAX_NUMBER_PRINT_WIDTH) {
+    state->pad_width = MAX_NUMBER_PRINT_WIDTH;
   }
 
   if (state->flags & flag_zeropad) {
