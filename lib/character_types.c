@@ -11,7 +11,7 @@ uint8_t parse_ascii_decimal_digit(char ch) {
 }
 
 char to_ascii_hexadecimal_digit(uint8_t in) {
-  VERIFY(in >= 0 && in <= 15);
+  VERIFY(in <= 15);
 
   if (in <= 9) {
     return in + '0';
