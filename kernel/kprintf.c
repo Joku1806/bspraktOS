@@ -1,7 +1,7 @@
 #include <arch/bsp/pl001.h>
-#include <kernel/debug.h>
 #include <kernel/kprintf.h>
 #include <lib/character_types.h>
+#include <lib/debug.h>
 #include <lib/error_codes.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -146,27 +146,46 @@ int handle_format_specifier(kprintf_state *state) {
     return -EINVAL;
   }
 
-  size_t chars_written;
-  if (*state->position == '%') {
+  int chars_written;
+  switch (*state->position) {
+  case '%': {
     chars_written = output_literal_percent();
-  } else if (*state->position == 'c') {
+    break;
+  }
+
+  case 'c': {
     char ch = va_arg(state->arguments, int);
     chars_written = output_character(ch);
-  } else if (*state->position == 's') {
+    break;
+  }
+
+  case 's': {
     char *str = va_arg(state->arguments, char *);
     chars_written = output_string(str);
-  } else if (*state->position == 'x') {
+    break;
+  }
+
+  case 'x': {
     unsigned int hex = va_arg(state->arguments, unsigned int);
     chars_written = format_and_output_number(hex, 16, false, state);
-  } else if (*state->position == 'p') {
+    break;
+  }
+
+  case 'p': {
     state->flags |= flag_hash;
     void *ptr = va_arg(state->arguments, void *);
     chars_written =
         format_and_output_number((unsigned long)ptr, 16, false, state);
-  } else if (*state->position == 'u') {
+    break;
+  }
+
+  case 'u': {
     unsigned int num = va_arg(state->arguments, unsigned int);
     chars_written = format_and_output_number(num, 10, false, state);
-  } else if (*state->position == 'i') {
+    break;
+  }
+
+  case 'i': {
     int num = va_arg(state->arguments, int);
     bool is_negative = num < 0;
     if (is_negative) {
@@ -174,13 +193,15 @@ int handle_format_specifier(kprintf_state *state) {
     }
 
     chars_written = format_and_output_number(num, 10, is_negative, state);
-  } else {
+    break;
+  }
+
+  default: {
     warnln("kprintf doesn't support format specifier %%%c.", *state->position);
     return -EINVAL;
   }
+  }
 
-  // durch cast von size_t -> int gehen möglicherweise Informationen verloren,
-  // obwohl das schon sehr unwahrscheinlich ist
   return chars_written;
 }
 

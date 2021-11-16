@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #define MAX_NUMBER_PRINT_WIDTH 32
-#define SAFE_DECREMENT(a, b) a = a > b ? a - b : 0
+#define SAFE_DECREMENT(a, b) a = (a) > (b) ? (a) - (b) : 0
 
 typedef enum {
   flag_zeropad = 1 << 0,

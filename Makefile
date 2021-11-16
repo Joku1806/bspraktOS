@@ -48,7 +48,7 @@ BIN_LSG =
 SRC = arch/cpu/entry.S \
 			arch/cpu/interrupt_vector_table.S \
 			arch/cpu/regcheck_asm.S \
-			arch/cpu/CPU.c \
+			arch/cpu/mission_control.c \
 			arch/bsp/pl001.c \
 			kernel/start.c \
 			kernel/interrupt.c \

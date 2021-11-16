@@ -1,4 +1,4 @@
-#include <arch/cpu/stack_defines.h>
+#include <lib/stack_defines.h>
 
 .global _setup_ivt
 _setup_ivt:

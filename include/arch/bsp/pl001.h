@@ -5,7 +5,6 @@
 
 #define UART_BASE (0x7E201000 - 0x3F000000)
 
-// wir brauchen vermutlich nicht alle -- nutzlose noch entfernen
 typedef enum {
   DR = 0x0,
   FR = 0x18,
