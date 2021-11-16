@@ -40,32 +40,31 @@ void irq_interrupt_handler() {
   kprintf("Willkommen im IRQ Interrupt Handler!\n");
 }
 
-void print_register_using_layout(uint32_t reg, register_group *layout_parts,
-                                 int part_count) {
-  register_group *current = layout_parts;
-  for (size_t bit_offset = 0; bit_offset < 32; bit_offset++) {
-    while (!current->printable || current->last_member_index < bit_offset) {
-      if (current->printable) {
-        kprintf(" ");
-      }
-
-      bit_offset = current->last_member_index + 1;
-      VERIFY(bit_offset <= 31);
-      current++;
+void print_register_using_layout(uint32_t reg,
+                                 register_layout_part *layout_parts) {
+  register_layout_part *part = layout_parts;
+  for (size_t bit_offset = 0; bit_offset < REGISTER_BIT_WIDTH; bit_offset++) {
+    if (bit_offset > part->last_member_bit_offset) {
+      kprintf(" ");
+      part++;
     }
 
+    if (!part->printable) {
+      bit_offset = part->last_member_bit_offset;
+      part++;
+      continue;
+    }
+
+    VERIFY(bit_offset < REGISTER_BIT_WIDTH);
     if (reg & (BIT_NEEDLE >> bit_offset)) {
-      kprintf(
-          "%c",
-          current
-              ->flag_mnemonics[strlen(current->flag_mnemonics) -
-                               (current->last_member_index - bit_offset) - 1]);
+      size_t flag_index = strlen(part->mnemonic) -
+                          (part->last_member_bit_offset - bit_offset) - 1;
+      VERIFY(flag_index < strlen(part->mnemonic));
+      kprintf("%c", part->mnemonic[flag_index]);
     } else {
       kprintf("_");
     }
   }
-
-  VERIFY(current - layout_parts == part_count - 1);
 }
 
 // TODO: braucht Informationen über aktuellen
@@ -95,17 +94,19 @@ void dump_registers(uint32_t general_regs[16], uint32_t CPSR, uint32_t SPSR) {
   }
 
   kprintf("\n>>> Aktuelle Statusregister (SPSR des aktuellen Modus) <<<\n");
-  register_group groups[5] = {{"NZCV", 3, true},
-                              {NULL, 26, false},
-                              {"E", 27, true},
-                              {NULL, 28, false},
-                              {"IFT", 31, true}};
+  register_layout_part groups[5] = {
+      {.mnemonic = "NZCV", .last_member_bit_offset = 3, .printable = true},
+      {.mnemonic = NULL, .last_member_bit_offset = 26, .printable = false},
+      {.mnemonic = "E", .last_member_bit_offset = 27, .printable = true},
+      {.mnemonic = NULL, .last_member_bit_offset = 28, .printable = false},
+      {.mnemonic = "IFT", .last_member_bit_offset = 31, .printable = true}};
+
   kprintf("CPSR: ");
-  print_register_using_layout(CPSR, groups, 5);
+  print_register_using_layout(CPSR, groups);
   kprintf("(%032b)\n", CPSR);
 
   kprintf("SPSR: ");
-  print_register_using_layout(SPSR, groups, 5);
+  print_register_using_layout(SPSR, groups);
   kprintf("(%032b)\n", SPSR);
 
   kprintf(">>> Aktuelle modusspezifische Register <<<\n");
