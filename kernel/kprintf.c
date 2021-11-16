@@ -7,9 +7,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 // in Teilen inspiriert von
-// https://github.com/mpaland/printf/blob/master/printf.c und NICHT von der libc
-// printf, wie im Aufgabenblatt empfohlen. Wenn wir das gemacht hätten, würde es
-// wahrscheinlich Abzugpunkte bis in den Minusbereich hageln :^)
+// https://github.com/mpaland/printf/blob/master/printf.c und NICHT von der
+// libc printf, wie im Aufgabenblatt empfohlen. Wenn wir das gemacht hätten,
+// würde es wahrscheinlich Abzugpunkte bis in den Minusbereich hageln :^)
 
 // interne Funktionen
 size_t output_literal_percent();
@@ -152,86 +152,75 @@ int handle_format_specifier(kprintf_state *state) {
 
   int chars_written;
   switch (*state->position) {
-  case '%': {
-    chars_written = output_literal_percent();
-    break;
-  }
+    case '%':
+      chars_written = output_literal_percent();
+      break;
 
-  case 'c': {
-    char ch = va_arg(state->arguments, int);
-    chars_written = output_character(ch);
-    break;
-  }
+    case 'c':
+      chars_written = output_character(va_arg(state->arguments, int));
+      break;
 
-  case 's': {
-    char *str = va_arg(state->arguments, char *);
-    chars_written = output_string(str);
-    break;
-  }
+    case 's':
+      chars_written = output_string(va_arg(state->arguments, char *));
+      break;
 
-  case 'b': {
-    unsigned int bin = va_arg(state->arguments, unsigned int);
-    chars_written = format_and_output_number(bin, 2, false, state);
-    break;
-  }
+    case 'b':
+      chars_written = format_and_output_number(
+          va_arg(state->arguments, unsigned int), 2, false, state);
+      break;
 
-  case 'x': {
-    unsigned int hex = va_arg(state->arguments, unsigned int);
-    chars_written = format_and_output_number(hex, 16, false, state);
-    break;
-  }
+    case 'x':
+      chars_written = format_and_output_number(
+          va_arg(state->arguments, unsigned int), 16, false, state);
+      break;
 
-  case 'p': {
-    state->flags |= flag_hash;
-    void *ptr = va_arg(state->arguments, void *);
-    chars_written =
-        format_and_output_number((unsigned long)ptr, 16, false, state);
-    break;
-  }
+    case 'p':
+      state->flags |= flag_hash;
+      chars_written = format_and_output_number(
+          (unsigned long)va_arg(state->arguments, void *), 16, false, state);
+      break;
 
-  case 'u': {
-    unsigned int num = va_arg(state->arguments, unsigned int);
-    chars_written = format_and_output_number(num, 10, false, state);
-    break;
-  }
+    case 'u':
+      chars_written = format_and_output_number(
+          va_arg(state->arguments, unsigned int), 10, false, state);
+      break;
 
-  case 'i': {
-    int num = va_arg(state->arguments, int);
-    bool is_negative = num < 0;
-    if (is_negative) {
-      num = -num;
+    case 'i': {
+      int num = va_arg(state->arguments, int);
+      bool is_negative = num < 0;
+      if (is_negative) {
+        num = -num;
+      }
+
+      chars_written = format_and_output_number(num, 10, is_negative, state);
+      break;
     }
 
-    chars_written = format_and_output_number(num, 10, is_negative, state);
-    break;
-  }
-
-  default: {
-    warnln("kprintf doesn't support format specifier %%%c.", *state->position);
-    return -EINVAL;
-  }
+    default:
+      warnln("kprintf doesn't support format specifier %%%c.",
+             *state->position);
+      return -EINVAL;
   }
 
   return chars_written;
 }
 
-// Setzt alle angegebenen Flags, die unterstützt sind. Im Moment ist die einzige
-// unterstützte Flag '0' :D. Es gibt auch noch flag_hash, aber die wird im
-// Moment nur dazu benutzt, um intern 0x bei %p anzuhängen.
+// Setzt alle angegebenen Flags, die unterstützt sind.
+// Im Moment sind das Zeropad und Hash.
 void set_flags(kprintf_state *state) {
   int flags_finished = 0;
   while (!flags_finished) {
     switch (*state->position) {
-    case '0':
-      state->flags |= flag_zeropad;
-      state->position++;
-      break;
-    case '#':
-      state->flags |= flag_hash;
-      state->position++;
-      break;
-    default:
-      flags_finished = 1;
+      case '0':
+        state->flags |= flag_zeropad;
+        state->position++;
+        break;
+      case '#':
+        state->flags |= flag_hash;
+        state->position++;
+        break;
+      default:
+        flags_finished = 1;
     }
   }
 }
@@ -277,8 +266,8 @@ void kprintf_reset_state(kprintf_state *state) {
 // Kernelkompatible printf-Funktion
 // Diese Funktion kann dafür verwendet werden, Debug-Output zu generieren.
 // Von den normalen printf-Features werden %c/s/%/x/p/u/i sowie die zero_pad
-// flag und variable Feldbreite unterstützt. Gibt -EINVAL zurück, falls es einen
-// Syntaxfehler im angegebenen Format gibt.
+// flag und variable Feldbreite unterstützt. Gibt -EINVAL zurück, falls es
+// einen Syntaxfehler im angegebenen Format gibt.
 __attribute__((format(printf, 1, 2))) int kprintf(const char *format, ...) {
   int chars_written = 0;
   int ret;

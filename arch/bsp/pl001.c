@@ -5,8 +5,7 @@ volatile uint32_t *pl001_register(register_offsets offset) {
 }
 
 void pl001_wait_until_transmission_complete() {
-  while (*pl001_register(FR) & TXFF) {
-  }
+  while (*pl001_register(FR) & TXFF) {}
 }
 
 int8_t pl001_receive() {

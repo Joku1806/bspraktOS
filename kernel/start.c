@@ -6,6 +6,5 @@ void start_kernel() {
   kprintf("Booted!\n");
   asm volatile("bkpt #0");
   kprintf("After Prefetch Abort!\n");
-  for (;;) {
-  }
+  for (;;) {}
 }
