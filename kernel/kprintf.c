@@ -1,5 +1,6 @@
 #include <arch/bsp/pl001.h>
 #include <kernel/kprintf.h>
+#include <lib/assertions.h>
 #include <lib/character_types.h>
 #include <lib/debug.h>
 #include <lib/error_codes.h>
@@ -56,11 +57,11 @@ size_t output_string(char *str) {
 // 12345 => "54321".
 size_t base_less_eq_16_to_ascii(uint32_t num, uint8_t base, char *out,
                                 size_t max_length) {
+  VERIFY(base <= 16);
   size_t digits = 0;
 
   do {
     uint8_t digit = num % base;
-    // supports only up to base 16
     out[digits++] = to_ascii_hexadecimal_digit(digit);
     num /= base;
   } while (num && (digits < max_length));
