@@ -1,3 +1,6 @@
+#ifndef STACK_DEFINES_H
+#define STACK_DEFINES_H
+
 // höchste Adresse für 128MB physischen Speicher
 // FIXME: vielleicht off-by-one?
 #define STACK_TOP_ADDRESS 128 * 1024 * 1024
@@ -15,3 +18,5 @@
 #define DATA_ABORT_INTERRUPT_HANDLER_SP STACK_TOP_ADDRESS - STACK_SIZE * 4
 #define IRQ_INTERRUPT_HANDLER_SP STACK_TOP_ADDRESS - STACK_SIZE * 5
 #define ENTRY_SP STACK_TOP_ADDRESS - STACK_SIZE * 6
+
+#endif

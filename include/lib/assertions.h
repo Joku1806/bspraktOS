@@ -4,8 +4,8 @@
 #ifndef ASSERTIONS_H
 #define ASSERTIONS_H
 
-#include "debug.h"
-#include <arch/cpu/CPU.h>
+#include <arch/cpu/mission_control.h>
+#include <lib/debug.h>
 #include <stdbool.h>
 
 #define VERIFY(expression)                                                     \
