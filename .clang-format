@@ -1,0 +1,6 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+AllowShortBlocksOnASingleLine: Empty
+ColumnLimit: 80
+IndentCaseLabels: true
