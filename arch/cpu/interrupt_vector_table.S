@@ -1,5 +1,3 @@
-#include <lib/stack_defines.h>
-
 .global _setup_ivt
 _setup_ivt:
   @ VBAR mit _ivt initialisieren
@@ -22,13 +20,11 @@ _ivt:
 
 _undefined_instruction:
   @ TODO: save regs
-  ldr sp, =UNDEFINED_INSTRUCTION_INTERRUPT_HANDLER_SP
   bl undefined_instruction_interrupt_handler
   @ TODO: restore regs
 
 _software_interrupt:
   @ TODO: save regs
-  ldr sp, =SOFTWARE_INTERRUPT_HANDLER_SP
   bl software_interrupt_handler
   @ TODO: restore regs
 
@@ -40,12 +36,10 @@ _prefetch_abort:
 
 _data_abort:
   @ TODO: save regs
-  ldr sp, =DATA_ABORT_INTERRUPT_HANDLER_SP
   bl data_abort_interrupt_handler
   @ TODO: restore regs
 
 _irq:
   @ TODO: save regs
-  ldr sp, =IRQ_INTERRUPT_HANDLER_SP
   bl irq_interrupt_handler
   @ TODO: restore regs

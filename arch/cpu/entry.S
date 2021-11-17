@@ -1,5 +1,11 @@
 #include <lib/stack_defines.h>
 
+#define PSR_IRQ 0x12
+#define PSR_SVC 0x13
+#define PSR_ABT 0x17
+#define PSR_UND 0x1b
+#define PSR_SYS 0x1f
+
 .section .init
 
 .global _start
@@ -36,8 +42,17 @@ _enableAlignCheck:
 
 _bsprak:
   bl _setup_ivt
-	/* Validen Stack Pointer setzten */
-	ldr sp,=ENTRY_SP
+	/* Valide Stack Pointer setzten */
+  cps #PSR_IRQ
+  ldr sp, =IRQ_SP
+  cps #PSR_SVC
+  ldr sp, =SUPERVISOR_SP
+  cps #PSR_ABT
+  ldr sp, =ABORT_SP
+  cps #PSR_UND
+  ldr sp, =UNDEFINED_INSTRUCTION_SP
+  cps #PSR_SYS
+  ldr sp, =USER_SYSTEM_SP
 	/* Zu c Code springen */
 	bl  start_kernel
 .Lend:
