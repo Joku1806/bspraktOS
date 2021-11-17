@@ -29,9 +29,18 @@ _software_interrupt:
   @ TODO: restore regs
 
 _prefetch_abort:
-  @ TODO: save regs
-  ldr sp, =PREFETCH_ABORT_INTERRUPT_HANDLER_SP
+  stmfd sp!, {r0-r15}
+  mrs r0, cpsr
+  mrs r1, spsr
+  stmfd sp!, {r0,r1}
+  mov r0, sp
   bl prefetch_abort_interrupt_handler
+  ldmfd sp!, {r0, r1}
+  msr cpsr, r0
+  msr spsr, r1
+  ldmfd sp!, {r0-r15}
+  sub lr, lr, #4
+  movs pc, lr
   @ TODO: restore regs
 
 _data_abort:

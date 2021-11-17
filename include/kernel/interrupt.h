@@ -3,13 +3,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
-
-void reset_interrupt_handler();
-void undefined_instruction_interrupt_handler();
-void software_interrupt_handler();
-void prefetch_abort_interrupt_handler();
-void data_abort_interrupt_handler();
-void irq_interrupt_handler();
+#include <stdint.h>
 
 #define BIT_NEEDLE 0x80000000
 #define REGISTER_BIT_WIDTH 32
@@ -20,6 +14,28 @@ typedef struct {
   bool printable;
 } register_layout_part;
 
-void dump_registers();
+typedef struct {
+  uint32_t cpsr;
+  uint32_t spsr;
+  uint32_t general[16];
+} interrupt_registers;
+
+typedef enum {
+  reset = 0,
+  undefined_instruction,
+  software,
+  prefetch_abort,
+  data_abort,
+  irq
+} interrupt_mode;
+
+void reset_interrupt_handler(interrupt_registers *regs);
+void undefined_instruction_interrupt_handler(interrupt_registers *regs);
+void software_interrupt_handler(interrupt_registers *regs);
+void prefetch_abort_interrupt_handler(interrupt_registers *regs);
+void data_abort_interrupt_handler(interrupt_registers *regs);
+void irq_interrupt_handler(interrupt_registers *regs);
+
+void dump_registers(interrupt_registers *regs, interrupt_mode mode);
 
 #endif
