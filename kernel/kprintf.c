@@ -1,3 +1,8 @@
+// in Teilen inspiriert von
+// https://github.com/mpaland/printf/blob/master/printf.c und NICHT von der
+// libc printf, wie im Aufgabenblatt empfohlen. Wenn wir das gemacht hätten,
+// würde es wahrscheinlich Abzugpunkte bis in den Minusbereich hageln :^)
+
 #include <arch/bsp/pl001.h>
 #include <kernel/kprintf.h>
 #include <lib/assertions.h>
@@ -6,10 +11,6 @@
 #include <lib/error_codes.h>
 #include <stdbool.h>
 #include <stddef.h>
-// in Teilen inspiriert von
-// https://github.com/mpaland/printf/blob/master/printf.c und NICHT von der
-// libc printf, wie im Aufgabenblatt empfohlen. Wenn wir das gemacht hätten,
-// würde es wahrscheinlich Abzugpunkte bis in den Minusbereich hageln :^)
 
 // interne Funktionen
 size_t output_literal_percent();
