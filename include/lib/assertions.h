@@ -4,16 +4,14 @@
 #ifndef ASSERTIONS_H
 #define ASSERTIONS_H
 
-#include <arch/cpu/mission_control.h>
 #include <lib/debug.h>
 #include <stdbool.h>
 
 #define VERIFY(expression)                                                     \
   do {                                                                         \
     if (!(expression)) {                                                       \
-      warnln("ASSERTION FAILED: %s\n%s:%u in %s", #expression, __FILE__,       \
-             __LINE__, __PRETTY_FUNCTION__);                                   \
-      halt_cpu();                                                              \
+      panicln("ASSERTION FAILED: %s\n%s:%u in %s", #expression, __FILE__,      \
+              __LINE__, __PRETTY_FUNCTION__);                                  \
     }                                                                          \
   } while (0)
 
