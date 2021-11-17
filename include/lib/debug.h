@@ -45,7 +45,7 @@
     kprintf(PANIC_COLOR "[PANIC] " RESET_COLOR);                               \
     kprintf(__VA_ARGS__);                                                      \
     kprintf("\n");                                                             \
-    halt_cpu()                                                                 \
+    halt_cpu();                                                                \
   } while (0)
 #else
 #define panic(...)
