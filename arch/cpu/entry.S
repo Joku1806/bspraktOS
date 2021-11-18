@@ -1,10 +1,5 @@
 #include <lib/stack_defines.h>
-
-#define PSR_IRQ 0x12
-#define PSR_SVC 0x13
-#define PSR_ABT 0x17
-#define PSR_UND 0x1b
-#define PSR_SYS 0x1f
+#include <arch/cpu/cpu_modes.h>
 
 .section .init
 
@@ -41,18 +36,19 @@ _enableAlignCheck:
 	mcr p15, 0, r0, c1, c0, 0
 
 _bsprak:
-  bl _setup_ivt
 	/* Valide Stack Pointer setzten */
-  cps #PSR_IRQ
+  cps #MODE_IRQ
   ldr sp, =IRQ_SP
-  cps #PSR_SVC
+  cps #MODE_SUPERVISOR
   ldr sp, =SUPERVISOR_SP
-  cps #PSR_ABT
+  cps #MODE_ABORT
   ldr sp, =ABORT_SP
-  cps #PSR_UND
+  cps #MODE_UNDEFINED
   ldr sp, =UNDEFINED_INSTRUCTION_SP
-  cps #PSR_SYS
+  cps #MODE_SYSTEM
   ldr sp, =USER_SYSTEM_SP
+
+  bl _setup_ivt
 	/* Zu c Code springen */
 	bl  start_kernel
 .Lend:
