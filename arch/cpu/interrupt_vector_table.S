@@ -1,9 +1,11 @@
+#define SAVED_REGS_COUNT 18
+
 .global _setup_ivt
 _setup_ivt:
   @ VBAR mit _ivt initialisieren
   ldr r0, =_ivt
   mcr p15, 0, r0, c12, c0, 0
-  @ Interrupts aktivieren
+  @ Interrupts aktivieren (nur aktueller Modus, sollte System sein!)
   cpsie i
   bx lr
 
@@ -29,19 +31,20 @@ _software_interrupt:
   @ TODO: restore regs
 
 _prefetch_abort:
-  stmfd sp!, {r0-r15}
+  stmfd sp, {r0-r15}
+  @ hässliche Lösung, vllt zwei separate defines?
+  sub sp, sp, #((SAVED_REGS_COUNT - 2) * 4)
   mrs r0, cpsr
   mrs r1, spsr
-  stmfd sp!, {r0,r1}
+  stmfd sp, {r0,r1}
+  sub sp, sp, #((SAVED_REGS_COUNT - 16) * 4)
   mov r0, sp
   bl prefetch_abort_interrupt_handler
   ldmfd sp!, {r0, r1}
   msr cpsr, r0
   msr spsr, r1
-  ldmfd sp!, {r0-r15}
-  sub lr, lr, #4
+  ldmfd sp, {r0-r14}
   movs pc, lr
-  @ TODO: restore regs
 
 _data_abort:
   @ TODO: save regs
