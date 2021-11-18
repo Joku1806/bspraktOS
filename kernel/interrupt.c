@@ -6,31 +6,59 @@
 #include <stdint.h>
 
 void reset_interrupt_handler(interrupt_registers *regs) {
-  kprintf("Willkommen im Reset Interrupt Handler!\n");
+  kprintf("#############################################"
+          "#######################"
+          "#######\n");
   // FIXME: sollte System neustarten, was wir gerade machen
   // ist eine Endlosschleife :D
+  kprintf("Reset Interrupt an Adresse %#010x\n", regs->general[14]);
+  dump_registers(regs);
   halt_cpu();
 }
 
 void undefined_instruction_interrupt_handler(interrupt_registers *regs) {
-  kprintf("Willkommen im Undefined Instruction Interrupt Handler!\n");
+  kprintf("#############################################"
+          "#######################"
+          "#######\n");
+  kprintf("Undefined Instruction an Adresse %#010x\n", regs->general[14]);
+  dump_registers(regs);
+  halt_cpu();
 }
 
 void software_interrupt_handler(interrupt_registers *regs) {
-  kprintf("Willkommen im Software Interrupt Handler!\n");
+  kprintf("#############################################"
+          "#######################"
+          "#######\n");
+  kprintf("Software Interrupt an Adresse %#010x\n", regs->general[14]);
+  dump_registers(regs);
+  halt_cpu();
 }
 
 void prefetch_abort_interrupt_handler(interrupt_registers *regs) {
-  kprintf("Willkommen im Prefetch Abort Interrupt Handler!\n");
-  dump_registers(regs, prefetch_abort);
+  kprintf("#############################################"
+          "#######################"
+          "#######\n");
+  kprintf("Prefetch Abort an Adresse %#010x\n", regs->general[14]);
+  dump_registers(regs);
+  halt_cpu();
 }
 
 void data_abort_interrupt_handler(interrupt_registers *regs) {
-  kprintf("Willkommen im Data Abort Interrupt Handler!\n");
+  kprintf("#############################################"
+          "#######################"
+          "#######\n");
+  kprintf("Data Abort an Adresse %#010x\n", regs->general[14]);
+  dump_registers(regs);
+  halt_cpu();
 }
 
 void irq_interrupt_handler(interrupt_registers *regs) {
-  kprintf("Willkommen im IRQ Interrupt Handler!\n");
+  kprintf("#############################################"
+          "#######################"
+          "#######\n");
+  kprintf("IRQ Interrupt an Adresse %#010x\n", regs->general[14]);
+  dump_registers(regs);
+  halt_cpu();
 }
 
 void print_register_using_layout(uint32_t reg,
@@ -42,7 +70,7 @@ void print_register_using_layout(uint32_t reg,
       part++;
     }
 
-    if (!part->printable) {
+    if (part->mnemonic == NULL) {
       bit_offset = part->last_member_bit_offset;
       part++;
       continue;
@@ -60,16 +88,26 @@ void print_register_using_layout(uint32_t reg,
   }
 }
 
-// TODO: braucht Informationen über aktuellen
-// Modus, um spezifische Register auszugeben
-void dump_registers(interrupt_registers *regs, interrupt_mode mode) {
-  kprintf("#############################################"
-          "#######################"
-          "#######\n");
+const char *get_padded_mode_label(cpu_mode mode) {
+  switch (mode) {
+    case m_irq:
+      return "IRQ:        ";
+    case m_supervisor:
+      return "Supervisor: ";
+    case m_abort:
+      return "Abort:      ";
+    case m_undefined:
+      return "Undefined:  ";
+    case m_system:
+      return "User/System:";
+    default:
+      VERIFY_NOT_REACHED();
+  }
+}
 
-  kprintf(">>> Registerschnappschuss (aktueller Modus) <<<\n");
+void dump_registers(interrupt_registers *regs) {
+  kprintf("\n>>> Registerschnappschuss (aktueller Modus) <<<\n");
   for (size_t reg_idx = 0; reg_idx < 8; reg_idx++) {
-    // FIXME: Unterstütze %#x
     kprintf("R%u: %#010x   ", reg_idx, regs->general[reg_idx]);
 
     // FIXME: Fälle vereinfachen
@@ -88,20 +126,33 @@ void dump_registers(interrupt_registers *regs, interrupt_mode mode) {
 
   kprintf("\n>>> Aktuelle Statusregister (SPSR des aktuellen Modus) <<<\n");
   register_layout_part groups[5] = {
-      {.mnemonic = "NZCV", .last_member_bit_offset = 3, .printable = true},
-      {.mnemonic = NULL, .last_member_bit_offset = 26, .printable = false},
-      {.mnemonic = "E", .last_member_bit_offset = 27, .printable = true},
-      {.mnemonic = NULL, .last_member_bit_offset = 28, .printable = false},
-      {.mnemonic = "IFT", .last_member_bit_offset = 31, .printable = true}};
+      {.mnemonic = "NZCV", .last_member_bit_offset = 3},
+      {.mnemonic = NULL, .last_member_bit_offset = 26},
+      {.mnemonic = "E", .last_member_bit_offset = 27},
+      {.mnemonic = NULL, .last_member_bit_offset = 28},
+      {.mnemonic = "IFT", .last_member_bit_offset = 31}};
 
   kprintf("CPSR: ");
   print_register_using_layout(regs->cpsr, groups);
-  kprintf("(%#010x)\n", regs->cpsr);
+  kprintf(" (%#010x)\n", regs->cpsr);
 
   kprintf("SPSR: ");
   print_register_using_layout(regs->spsr, groups);
-  kprintf("(%#010x)\n", regs->spsr);
+  kprintf(" (%#010x)\n", regs->spsr);
 
-  kprintf(">>> Aktuelle modusspezifische Register <<<\n");
-  halt_cpu();
+  kprintf("\n>>> Aktuelle modusspezifische Register <<<\n");
+  static const cpu_mode modes[NUMBER_OF_MODES] = {m_system, m_supervisor,
+                                                  m_abort, m_irq, m_undefined};
+
+  kprintf("             LR         SP         SPSR\n");
+  for (size_t mode_index = 0; mode_index < NUMBER_OF_MODES; mode_index++) {
+    uint32_t m_spsr = get_mode_spsr(modes[mode_index]);
+    uint32_t m_lr = get_mode_lr(modes[mode_index]);
+    uint32_t m_pc = get_mode_pc(modes[mode_index]);
+    kprintf("%s %#010x %#010x ", get_padded_mode_label(modes[mode_index]), m_lr,
+            m_pc);
+    print_register_using_layout(m_spsr, groups);
+    kprintf(" (%#010x)\n", m_spsr);
+  }
+  kprintf("\n");
 }
