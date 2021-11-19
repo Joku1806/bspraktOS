@@ -40,7 +40,7 @@ _prefetch_abort:
   sub sp, sp, #((SAVED_REGS_COUNT - 16) * 4)
   mov r0, sp
   bl prefetch_abort_interrupt_handler
-  ldmfd sp!, {r0, r1}
+  ldmfd sp, {r0, r1}
   msr cpsr, r0
   msr spsr, r1
   ldmfd sp, {r0-r14}
