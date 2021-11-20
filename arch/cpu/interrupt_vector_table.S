@@ -17,18 +17,40 @@ _ivt:
   ldr pc, =_software_interrupt
   ldr pc, =_prefetch_abort
   ldr pc, =_data_abort
-  b halt_cpu @ nicht benutzt, sollte also niemals passieren
+  b halt_cpu @ fiq wird nicht benutzt, sollte also niemals passieren
   ldr pc, =_irq
 
 _undefined_instruction:
-  @ TODO: save regs
+  stmfd sp, {r0-r15}
+  @ hässliche Lösung, vllt zwei separate defines?
+  sub sp, sp, #((SAVED_REGS_COUNT - 2) * 4)
+  mrs r0, cpsr
+  mrs r1, spsr
+  stmfd sp, {r0,r1}
+  sub sp, sp, #((SAVED_REGS_COUNT - 16) * 4)
+  mov r0, sp
   bl undefined_instruction_interrupt_handler
-  @ TODO: restore regs
+  ldmfd sp, {r0, r1}
+  msr cpsr_cxsf, r0
+  msr spsr_cxsf, r1
+  ldmfd sp, {r0-r14}
+  movs pc, lr
 
 _software_interrupt:
-  @ TODO: save regs
+  stmfd sp, {r0-r15}
+  @ hässliche Lösung, vllt zwei separate defines?
+  sub sp, sp, #((SAVED_REGS_COUNT - 2) * 4)
+  mrs r0, cpsr
+  mrs r1, spsr
+  stmfd sp, {r0,r1}
+  sub sp, sp, #((SAVED_REGS_COUNT - 16) * 4)
+  mov r0, sp
   bl software_interrupt_handler
-  @ TODO: restore regs
+  ldmfd sp, {r0, r1}
+  msr cpsr_cxsf, r0
+  msr spsr_cxsf, r1
+  ldmfd sp, {r0-r14}
+  movs pc, lr
 
 _prefetch_abort:
   stmfd sp, {r0-r15}
@@ -41,17 +63,39 @@ _prefetch_abort:
   mov r0, sp
   bl prefetch_abort_interrupt_handler
   ldmfd sp, {r0, r1}
-  msr cpsr, r0
-  msr spsr, r1
+  msr cpsr_cxsf, r0
+  msr spsr_cxsf, r1
   ldmfd sp, {r0-r14}
   movs pc, lr
 
 _data_abort:
-  @ TODO: save regs
+  stmfd sp, {r0-r15}
+  @ hässliche Lösung, vllt zwei separate defines?
+  sub sp, sp, #((SAVED_REGS_COUNT - 2) * 4)
+  mrs r0, cpsr
+  mrs r1, spsr
+  stmfd sp, {r0,r1}
+  sub sp, sp, #((SAVED_REGS_COUNT - 16) * 4)
+  mov r0, sp
   bl data_abort_interrupt_handler
-  @ TODO: restore regs
+  ldmfd sp, {r0, r1}
+  msr cpsr_cxsf, r0
+  msr spsr_cxsf, r1
+  ldmfd sp, {r0-r14}
+  movs pc, lr
 
 _irq:
-  @ TODO: save regs
+  stmfd sp, {r0-r15}
+  @ hässliche Lösung, vllt zwei separate defines?
+  sub sp, sp, #((SAVED_REGS_COUNT - 2) * 4)
+  mrs r0, cpsr
+  mrs r1, spsr
+  stmfd sp, {r0,r1}
+  sub sp, sp, #((SAVED_REGS_COUNT - 16) * 4)
+  mov r0, sp
   bl irq_interrupt_handler
-  @ TODO: restore regs
+  ldmfd sp, {r0, r1}
+  msr cpsr_cxsf, r0
+  msr spsr_cxsf, r1
+  ldmfd sp, {r0-r14}
+  movs pc, lr
