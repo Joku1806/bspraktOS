@@ -1,4 +1,4 @@
-#define SAVED_REGS_COUNT 18
+#define SAVED_REGS_COUNT 16
 
 .global _setup_ivt
 _setup_ivt:
@@ -22,80 +22,40 @@ _ivt:
 
 _undefined_instruction:
   stmfd sp, {r0-r15}
-  @ hässliche Lösung, vllt zwei separate defines?
-  sub sp, sp, #((SAVED_REGS_COUNT - 2) * 4)
-  mrs r0, cpsr
-  mrs r1, spsr
-  stmfd sp, {r0,r1}
-  sub sp, sp, #((SAVED_REGS_COUNT - 16) * 4)
+  sub sp, sp, #(SAVED_REGS_COUNT * 4)
   mov r0, sp
   bl undefined_instruction_interrupt_handler
-  ldmfd sp, {r0, r1}
-  msr cpsr_cxsf, r0
-  msr spsr_cxsf, r1
   ldmfd sp, {r0-r14}
   movs pc, lr
 
 _software_interrupt:
   stmfd sp, {r0-r15}
-  @ hässliche Lösung, vllt zwei separate defines?
-  sub sp, sp, #((SAVED_REGS_COUNT - 2) * 4)
-  mrs r0, cpsr
-  mrs r1, spsr
-  stmfd sp, {r0,r1}
-  sub sp, sp, #((SAVED_REGS_COUNT - 16) * 4)
+  sub sp, sp, #(SAVED_REGS_COUNT * 4)
   mov r0, sp
   bl software_interrupt_handler
-  ldmfd sp, {r0, r1}
-  msr cpsr_cxsf, r0
-  msr spsr_cxsf, r1
   ldmfd sp, {r0-r14}
   movs pc, lr
 
 _prefetch_abort:
   stmfd sp, {r0-r15}
-  @ hässliche Lösung, vllt zwei separate defines?
-  sub sp, sp, #((SAVED_REGS_COUNT - 2) * 4)
-  mrs r0, cpsr
-  mrs r1, spsr
-  stmfd sp, {r0,r1}
-  sub sp, sp, #((SAVED_REGS_COUNT - 16) * 4)
+  sub sp, sp, #(SAVED_REGS_COUNT * 4)
   mov r0, sp
   bl prefetch_abort_interrupt_handler
-  ldmfd sp, {r0, r1}
-  msr cpsr_cxsf, r0
-  msr spsr_cxsf, r1
   ldmfd sp, {r0-r14}
   movs pc, lr
 
 _data_abort:
   stmfd sp, {r0-r15}
-  @ hässliche Lösung, vllt zwei separate defines?
-  sub sp, sp, #((SAVED_REGS_COUNT - 2) * 4)
-  mrs r0, cpsr
-  mrs r1, spsr
-  stmfd sp, {r0,r1}
-  sub sp, sp, #((SAVED_REGS_COUNT - 16) * 4)
+  sub sp, sp, #(SAVED_REGS_COUNT * 4)
   mov r0, sp
   bl data_abort_interrupt_handler
-  ldmfd sp, {r0, r1}
-  msr cpsr_cxsf, r0
-  msr spsr_cxsf, r1
   ldmfd sp, {r0-r14}
   movs pc, lr
 
 _irq:
   stmfd sp, {r0-r15}
-  @ hässliche Lösung, vllt zwei separate defines?
-  sub sp, sp, #((SAVED_REGS_COUNT - 2) * 4)
-  mrs r0, cpsr
-  mrs r1, spsr
-  stmfd sp, {r0,r1}
-  sub sp, sp, #((SAVED_REGS_COUNT - 16) * 4)
+  sub sp, sp, #(SAVED_REGS_COUNT * 4)
   mov r0, sp
   bl irq_interrupt_handler
-  ldmfd sp, {r0, r1}
-  msr cpsr_cxsf, r0
-  msr spsr_cxsf, r1
   ldmfd sp, {r0-r14}
   movs pc, lr
