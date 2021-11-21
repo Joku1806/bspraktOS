@@ -15,7 +15,7 @@
 // interne Funktionen
 size_t output_literal_percent();
 size_t output_character(char ch);
-size_t output_string(char *str);
+size_t output_string(char *str, kprintf_state *state);
 size_t base_less_eq_16_to_ascii(uint32_t num, uint8_t base, char *out,
                                 size_t max_length);
 size_t format_and_output_number(unsigned long num, uint8_t base,
@@ -41,12 +41,17 @@ size_t output_character(char ch) {
 }
 
 // Verantwortlich für %s und gibt kprintf Argument als String aus.
-size_t output_string(char *str) {
+size_t output_string(char *str, kprintf_state *state) {
   size_t chars_written = 0;
   while (*str != '\0') {
     pl001_send(*str);
     chars_written++;
     str++;
+  }
+
+  while (chars_written < state->pad_width) {
+    pl001_send(' ');
+    chars_written++;
   }
 
   return chars_written;
@@ -137,15 +142,6 @@ int handle_format_specifier(kprintf_state *state) {
     return -EINVAL;
   }
 
-  if (!(*state->position == 'i' || *state->position == 'u' ||
-        *state->position == 'b' || *state->position == 'x' ||
-        *state->position == 'p') &&
-      state->pad_width) {
-    warnln("Field width can't be used with format specifier %%%c.",
-           *state->position);
-    return -EINVAL;
-  }
-
   if (*state->position == 'p' && state->flags & flag_zeropad) {
     warnln("Zero-padding can't be used with format specifier %%p.");
     return -EINVAL;
@@ -162,7 +158,7 @@ int handle_format_specifier(kprintf_state *state) {
       break;
 
     case 's':
-      chars_written = output_string(va_arg(state->arguments, char *));
+      chars_written = output_string(va_arg(state->arguments, char *), state);
       break;
 
     case 'b':
