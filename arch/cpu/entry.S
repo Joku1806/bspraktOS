@@ -1,5 +1,5 @@
 #include <lib/stack_defines.h>
-#include <arch/cpu/cpu_modes.h>
+#include <arch/cpu/program_status_register.h>
 
 .section .init
 
