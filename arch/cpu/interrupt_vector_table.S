@@ -12,7 +12,7 @@ _setup_ivt:
 .global _ivt
 .balign 64
 _ivt:
-  b reset_interrupt_handler
+  ldr pc, =reset_interrupt_handler
   ldr pc, =_undefined_instruction
   ldr pc, =_software_interrupt
   ldr pc, =_prefetch_abort
