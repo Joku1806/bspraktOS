@@ -2,8 +2,15 @@
 #include <arch/bsp/pl001.h>
 #include <config.h>
 #include <kernel/kprintf.h>
+#include <lib/debug.h>
+#include <arch/bsp/systimer.h>
+
+
 
 void start_kernel() {
+  
+  start_systimer();
+
   for (;;) {
     char ch = pl001_receive();
 
@@ -22,4 +29,12 @@ void start_kernel() {
         break;
     }
   }
+ 
+
+
+  kprintf("Booted!\n");
+  //asm volatile("bkpt #0");
+  kprintf("After Prefetch Abort!\n");
+  for (;;) {}
+
 }

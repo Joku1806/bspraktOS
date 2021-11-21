@@ -57,7 +57,8 @@ SRC = arch/cpu/entry.S \
 			kernel/kprintf.c \
 			kernel/regcheck.c \
 			lib/character_types.c \
-			lib/string.c
+			lib/string.c \
+			arch/bsp/systimer.c
 
 # Hier separate user files hinzufügen
 USRC = user/main.c
