@@ -1,4 +1,6 @@
-#define UART_TIMER (0x7E003000)
+#include<stdint.h>
+
+#define UART_TIMER (0x7E003000 - 0x3F000000)
 
 
 typedef enum {

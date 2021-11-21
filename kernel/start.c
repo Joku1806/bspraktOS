@@ -5,7 +5,12 @@
 #include <lib/debug.h>
 #include <arch/bsp/systimer.h>
 
+
+
 void start_kernel() {
+  
+  start_systimer();
+
   for (;;) {
     char ch = pl001_receive();
 
@@ -24,8 +29,7 @@ void start_kernel() {
         break;
     }
   }
-
-  start_systimer();
+ 
 
 
   kprintf("Booted!\n");
