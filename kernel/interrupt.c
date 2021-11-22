@@ -1,4 +1,5 @@
 #include <arch/cpu/data_fault_status_register.h>
+#include <arch/cpu/instruction_fault_status_register.h>
 #include <arch/cpu/mission_control.h>
 #include <arch/cpu/program_status_register.h>
 #include <kernel/interrupt.h>
@@ -49,8 +50,8 @@ void prefetch_abort_interrupt_handler(uint32_t *regs) {
           "#######################"
           "#######\n");
   kprintf("Prefetch Abort an Adresse %#010x\n", regs[LR_POSITION]);
-  kprintf("Zugriff: %s auf Adresse %#010x\n", "lesend", ifar);
-  kprintf("Fehler: %s\n", "Alignment Fault");
+  kprintf("Zugriff: Ausführung von Instruktion an Adresse %#010x\n", ifar);
+  kprintf("Fehler: %s\n", get_prefetch_abort_error_type(ifsr));
 
   dump_registers(regs);
   halt_cpu();
