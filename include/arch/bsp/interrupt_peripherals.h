@@ -10,6 +10,8 @@
 
 #else
 
+#include <stdint.h>
+
 typedef enum {
   IRQ_basic_pending = 0x200,
   IRQ_pending_1 = 0x204,
@@ -24,8 +26,10 @@ typedef enum {
 } peripherals_register_offsets;
 
 typedef enum {
-  timer_pending = 0x1 << 0,
-} IRQ_basic_pending_flags;
+  timer1_pending = 0x1 << 1,
+} IRQ1_pending_flags;
+
+volatile uint32_t *peripherals_register(peripherals_register_offsets offset);
 
 #endif
 

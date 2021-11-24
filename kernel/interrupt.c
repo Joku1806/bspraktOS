@@ -81,6 +81,9 @@ void irq_interrupt_handler(uint32_t *regs) {
           "#######\n");
   kprintf("IRQ Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
   dump_registers(regs);
+  if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
+    reset_systimer();
+  }
 }
 
 void print_general_registers(uint32_t *regs) {

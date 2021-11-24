@@ -12,5 +12,4 @@ typedef enum {
   M1 = 1 << 1,
 } control_flags;
 
-void start_systimer();
-volatile uint32_t *systimer_register(systimer_offsets offset);
+void reset_systimer();

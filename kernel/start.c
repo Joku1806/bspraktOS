@@ -6,7 +6,7 @@
 #include <lib/debug.h>
 
 void start_kernel() {
-  start_systimer();
+  reset_systimer();
 
   for (;;) {
     char ch = pl001_receive();
