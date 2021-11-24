@@ -1,5 +1,5 @@
 #include <lib/stack_defines.h>
-#include <arch/cpu/program_status_register.h>
+#include <arch/cpu/psr.h>
 
 .section .init
 

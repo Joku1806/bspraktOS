@@ -1,4 +1,4 @@
-#include <arch/cpu/instruction_fault_status_register.h>
+#include <arch/cpu/ifsr.h>
 #include <lib/assertions.h>
 
 const char *get_prefetch_abort_error_type(uint32_t ifsr) {

@@ -1,7 +1,9 @@
-#include <arch/cpu/data_fault_status_register.h>
-#include <arch/cpu/instruction_fault_status_register.h>
+#include <arch/bsp/interrupt_peripherals.h>
+#include <arch/bsp/systimer.h>
+#include <arch/cpu/dfsr.h>
+#include <arch/cpu/ifsr.h>
 #include <arch/cpu/mission_control.h>
-#include <arch/cpu/program_status_register.h>
+#include <arch/cpu/psr.h>
 #include <kernel/interrupt.h>
 #include <kernel/kprintf.h>
 #include <lib/assertions.h>

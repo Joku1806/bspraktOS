@@ -1,4 +1,4 @@
-#include <arch/cpu/program_status_register.h>
+#include <arch/cpu/psr.h>
 #include <lib/assertions.h>
 
 const char *get_mode_name(uint32_t psr) {

@@ -1,4 +1,4 @@
-#include <arch/cpu/data_fault_status_register.h>
+#include <arch/cpu/dfsr.h>
 #include <lib/assertions.h>
 
 const char *get_data_abort_error_type(uint32_t dfsr) {
