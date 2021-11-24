@@ -16,9 +16,13 @@ void pl001_setup() {
       ringbuffer_create(pl001_buffer_contents_internal, UART_INPUT_BUFFER_SIZE);
 }
 
-int8_t pl001_receive() {
-  while (*pl001_register(FR) & RXFE) {}
-  return *pl001_register(DR);
+void pl001_receive() {
+  ringbuffer_write(&pl001_buffer_internal, *pl001_register(DR));
+}
+
+char pl001_read(){
+  while(!pl001_buffer_internal.valid_reads){}
+  return ringbuffer_read(&pl001_buffer_internal);
 }
 
 void pl001_send(char ch) {

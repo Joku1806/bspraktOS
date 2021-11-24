@@ -7,6 +7,8 @@
 
 #define ENABLE_IRQS_1_OFFSET 0x210
 #define TIMER1_ENABLE_FLAG 0x2
+#define ENABLE_IRQS_2_OFFSET 0x214
+#define INTERRUPT_ENABLE_FLAG 1<<25
 
 #else
 
@@ -28,6 +30,11 @@ typedef enum {
 typedef enum {
   timer1_pending = 0x1 << 1,
 } IRQ1_pending_flags;
+
+typedef enum {
+  UART_pending = 0x1 << 25,
+} IRQ2_pending_flags;
+
 
 volatile uint32_t *peripherals_register(peripherals_register_offsets offset);
 

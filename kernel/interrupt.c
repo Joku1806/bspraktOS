@@ -1,3 +1,4 @@
+#include "arch/bsp/pl001.h"
 #include <arch/bsp/interrupt_peripherals.h>
 #include <arch/bsp/systimer.h>
 #include <arch/cpu/dfsr.h>
@@ -103,6 +104,9 @@ void irq_interrupt_handler(uint32_t *regs) {
 
   if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
     reset_systimer();
+  }
+  else if(*peripherals_register(IRQ_pending_2) & UART_pending){
+    pl001_receive();
   }
 }
 

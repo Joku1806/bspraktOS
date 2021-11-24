@@ -30,7 +30,9 @@ typedef enum {
   TXFF = 1 << 5,
 } FR_FLAGS;
 
-int8_t pl001_receive();
+void pl001_receive();
 void pl001_send(char ch);
+char pl001_read();
+void pl001_setup();
 
 #endif
