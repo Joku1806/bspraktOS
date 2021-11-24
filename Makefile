@@ -60,6 +60,7 @@ SRC = arch/bsp/interrupt_peripherals.c \
 			kernel/kprintf.c \
 			kernel/regcheck.c \
 			lib/character_types.c \
+			lib/ringbuffer.c \
 			lib/string.c
 
 # Hier separate user files hinzufügen
