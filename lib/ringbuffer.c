@@ -24,7 +24,6 @@ size_t last_read_index(ringbuffer *r) {
   return r->read_index == 0 ? r->length - 1 : r->read_index - 1;
 }
 
-
 char ringbuffer_read(ringbuffer *r) {
   VERIFY(r->read_index < r->length);
   r->ignore_writes = false;
@@ -42,7 +41,6 @@ char ringbuffer_read(ringbuffer *r) {
 
 void ringbuffer_write(ringbuffer *r, char ch) {
   VERIFY(r->write_index < r->length);
-
   r->valid_reads = true;
 
   if (r->ignore_writes) {

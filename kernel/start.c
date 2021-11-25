@@ -12,7 +12,7 @@ bool print_registers = true;
 void start_kernel() {
   reset_systimer();
   pl001_setup();
-  
+
   for (;;) {
     char ch = pl001_read();
 

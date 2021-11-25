@@ -1,5 +1,5 @@
-#include "arch/bsp/pl001.h"
 #include <arch/bsp/interrupt_peripherals.h>
+#include <arch/bsp/pl001.h>
 #include <arch/bsp/systimer.h>
 #include <arch/cpu/dfsr.h>
 #include <arch/cpu/ifsr.h>
@@ -104,8 +104,7 @@ void irq_interrupt_handler(uint32_t *regs) {
 
   if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
     reset_systimer();
-  }
-  else if(*peripherals_register(IRQ_pending_2) & UART_pending){
+  } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
   }
 }
@@ -186,7 +185,7 @@ void print_various_mode_registers(register_layout_part *layout) {
     uint32_t m_spsr = mode_regs[3 * mode_index + 0];
     uint32_t m_lr = mode_regs[3 * mode_index + 1];
     uint32_t m_sp = mode_regs[3 * mode_index + 2];
-    // FIXME: geht das irgendwie mit Variablen/Macros?
+    // FIXME: geht das Padding irgendwie mit Variablen/Macros?
     kprintf("%10s %#010x %#010x ", get_mode_name(modes[mode_index]), m_lr,
             m_sp);
 

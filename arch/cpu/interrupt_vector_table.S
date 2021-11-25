@@ -17,7 +17,7 @@ _setup_ivt:
 
   ldr r1, =(INTERRUPT_PERIPHERALS_BASE + ENABLE_IRQS_2_OFFSET)
   ldr r0, [r1]
-  orr r0, r0, #INTERRUPT_ENABLE_FLAG
+  orr r0, r0, #UART_ENABLE_FLAG
   str r0, [r1]
 
   bx lr
