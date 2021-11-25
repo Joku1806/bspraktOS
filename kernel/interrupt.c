@@ -20,75 +20,65 @@ void print_various_mode_registers(register_layout_part *layout);
 void dump_registers(uint32_t *regs);
 
 void reset_interrupt_handler(uint32_t *regs) {
-  if (print_registers) {
-    kprintf("#############################################"
-            "#######################"
-            "#######\n");
-    kprintf("Reset Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
-    dump_registers(regs);
-  }
+  kprintf("#############################################"
+          "#######################"
+          "#######\n");
+  kprintf("Reset Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
+  dump_registers(regs);
 
   halt_cpu();
 }
 
 void undefined_instruction_interrupt_handler(uint32_t *regs) {
-  if (print_registers) {
-    kprintf("#############################################"
-            "#######################"
-            "#######\n");
-    kprintf("Undefined Instruction an Adresse %#010x\n", regs[LR_POSITION]);
-    dump_registers(regs);
-  }
+  kprintf("#############################################"
+          "#######################"
+          "#######\n");
+  kprintf("Undefined Instruction an Adresse %#010x\n", regs[LR_POSITION]);
+  dump_registers(regs);
 
   halt_cpu();
 }
 
 void software_interrupt_handler(uint32_t *regs) {
-  if (print_registers) {
-    kprintf("#############################################"
-            "#######################"
-            "#######\n");
-    kprintf("Software Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
-    dump_registers(regs);
-  }
+  kprintf("#############################################"
+          "#######################"
+          "#######\n");
+  kprintf("Software Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
+  dump_registers(regs);
 
   halt_cpu();
 }
 
 void prefetch_abort_interrupt_handler(uint32_t *regs) {
-  if (print_registers) {
-    uint32_t ifsr = 0, ifar = 0;
-    asm volatile("mrc p15, 0, %0, c5, c0, 1 \n\t"
-                 "mrc p15, 0, %1, c6, c0, 2 \n\t"
-                 : "=r"(ifsr), "=r"(ifar));
-    kprintf("#############################################"
-            "#######################"
-            "#######\n");
-    kprintf("Prefetch Abort an Adresse %#010x\n", regs[LR_POSITION]);
-    kprintf("Zugriff: Ausführung von Instruktion an Adresse %#010x\n", ifar);
-    kprintf("Fehler: %s\n", get_prefetch_abort_error_type(ifsr));
+  uint32_t ifsr = 0, ifar = 0;
+  asm volatile("mrc p15, 0, %0, c5, c0, 1 \n\t"
+               "mrc p15, 0, %1, c6, c0, 2 \n\t"
+               : "=r"(ifsr), "=r"(ifar));
+  kprintf("#############################################"
+          "#######################"
+          "#######\n");
+  kprintf("Prefetch Abort an Adresse %#010x\n", regs[LR_POSITION]);
+  kprintf("Zugriff: Ausführung von Instruktion an Adresse %#010x\n", ifar);
+  kprintf("Fehler: %s\n", get_prefetch_abort_error_type(ifsr));
 
-    dump_registers(regs);
-  }
+  dump_registers(regs);
 
   halt_cpu();
 }
 
 void data_abort_interrupt_handler(uint32_t *regs) {
-  if (print_registers) {
-    uint32_t dfsr = 0, dfar = 0;
-    asm volatile("mrc p15, 0, %0, c5, c0, 0 \n\t"
-                 "mrc p15, 0, %1, c6, c0, 0 \n\t"
-                 : "=r"(dfsr), "=r"(dfar));
-    kprintf("#############################################"
-            "#######################"
-            "#######\n");
-    kprintf("Data Abort an Adresse %#010x\n", regs[LR_POSITION]);
-    kprintf("Zugriff: %s auf Adresse %#010x\n", "lesend", dfar);
-    kprintf("Fehler: %s\n", get_data_abort_error_type(dfsr));
+  uint32_t dfsr = 0, dfar = 0;
+  asm volatile("mrc p15, 0, %0, c5, c0, 0 \n\t"
+               "mrc p15, 0, %1, c6, c0, 0 \n\t"
+               : "=r"(dfsr), "=r"(dfar));
+  kprintf("#############################################"
+          "#######################"
+          "#######\n");
+  kprintf("Data Abort an Adresse %#010x\n", regs[LR_POSITION]);
+  kprintf("Zugriff: %s auf Adresse %#010x\n", "lesend", dfar);
+  kprintf("Fehler: %s\n", get_data_abort_error_type(dfsr));
 
-    dump_registers(regs);
-  }
+  dump_registers(regs);
 
   halt_cpu();
 }
