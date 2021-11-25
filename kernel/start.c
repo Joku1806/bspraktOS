@@ -6,8 +6,23 @@
 #include <kernel/regcheck.h>
 #include <lib/debug.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 bool print_registers = false;
+
+void important_calculations() {
+  size_t counter = 0;
+  for (;;) {
+    while (counter != BUSY_WAIT_COUNTER) {
+      asm volatile("" ::: "memory");
+      counter++;
+    }
+
+    counter = 0;
+    char ch = pl001_read();
+    kprintf("%c", ch);
+  }
+}
 
 void start_kernel() {
   reset_systimer();
@@ -34,6 +49,9 @@ void start_kernel() {
         break;
       case 'c':
         register_checker();
+        break;
+      case 'e':
+        important_calculations();
         break;
     }
   }
