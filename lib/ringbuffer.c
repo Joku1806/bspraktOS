@@ -27,6 +27,7 @@ size_t last_read_index(ringbuffer *r) {
 char ringbuffer_read(ringbuffer *r) {
   VERIFY(r->read_index < r->length);
   r->ignore_writes = false;
+  while (!r->valid_reads) {}
 
   char ch = r->contents[r->read_index];
 
