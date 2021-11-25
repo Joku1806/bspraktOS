@@ -7,7 +7,7 @@
 #include <lib/debug.h>
 #include <stdbool.h>
 
-bool print_registers = true;
+bool print_registers = false;
 
 void start_kernel() {
   reset_systimer();
