@@ -1,9 +1,10 @@
+#define LOG_LEVEL WARNING_LEVEL
+#define LOG_LABEL "Ringbuffer"
+
 #include <lib/assertions.h>
 #include <lib/debug.h>
 #include <lib/ringbuffer.h>
 #include <stddef.h>
-
-#define LOGLEVEL WARNING_LEVEL
 
 ringbuffer ringbuffer_create(char *contents, size_t length) {
   VERIFY(length != 0);
@@ -29,9 +30,13 @@ char ringbuffer_read(ringbuffer *r) {
   r->ignore_writes = false;
   while (!r->valid_reads) {}
 
-  char ch = r->contents[r->read_index];
+  dbgln("Read character code %u at read index %u (write index %u)", ch,
+        r->read_index, r->write_index);
 
   if (r->read_index == r->write_index) {
+    dbgln("Read index hit write index %u, now stalling until another write "
+          "occurs.",
+          r->write_index);
     r->read_index = last_read_index(r);
   }
 
@@ -49,6 +54,9 @@ void ringbuffer_write(ringbuffer *r, char ch) {
   }
 
   if (r->write_index == last_read_index(r)) {
+    dbgln("Write index will hit read index %u in next call, now blocking until "
+          "read is called again.",
+          r->read_index);
     r->ignore_writes = true;
   }
 
