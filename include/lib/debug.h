@@ -17,10 +17,14 @@
 #define LOG_LEVEL DEBUG_LEVEL
 #endif
 
+#ifndef LOG_LABEL
+#define LOG_LABEL "Unknown"
+#endif
+
 #if LOG_LEVEL >= DEBUG_LEVEL
 #define dbgln(...)                                                             \
   do {                                                                         \
-    kprintf(DEBUG_COLOR "[*] " RESET_COLOR);                                   \
+    kprintf(DEBUG_COLOR "[*] " RESET_COLOR "(" LOG_LABEL "): ");               \
     kprintf(__VA_ARGS__);                                                      \
     kprintf("\n");                                                             \
   } while (0)
@@ -31,7 +35,7 @@
 #if LOG_LEVEL >= WARNING_LEVEL
 #define warnln(...)                                                            \
   do {                                                                         \
-    kprintf(WARN_COLOR "[WARNING] " RESET_COLOR);                              \
+    kprintf(WARN_COLOR "[WARNING] " RESET_COLOR "(" LOG_LABEL "): ");          \
     kprintf(__VA_ARGS__);                                                      \
     kprintf("\n");                                                             \
   } while (0)
@@ -42,7 +46,7 @@
 #if LOG_LEVEL >= PANIC_LEVEL
 #define panicln(...)                                                           \
   do {                                                                         \
-    kprintf(PANIC_COLOR "[PANIC] " RESET_COLOR);                               \
+    kprintf(PANIC_COLOR "[PANIC] " RESET_COLOR "(" LOG_LABEL "): ");           \
     kprintf(__VA_ARGS__);                                                      \
     kprintf("\n");                                                             \
     halt_cpu();                                                                \
