@@ -8,6 +8,7 @@ volatile uint32_t *systimer_register(systimer_offsets offset) {
 }
 
 void reset_systimer() {
+  kprintf("!\n");
   *systimer_register(CS) |= M1;
   *systimer_register(C1) = *systimer_register(CLO) + TIMER_INTERVAL;
 }
