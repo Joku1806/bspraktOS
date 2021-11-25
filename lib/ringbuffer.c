@@ -33,14 +33,17 @@ char ringbuffer_read(ringbuffer *r) {
   dbgln("Read character code %u at read index %u (write index %u)", ch,
         r->read_index, r->write_index);
 
+  char ch;
   if (r->read_index == r->write_index) {
     dbgln("Read index hit write index %u, now stalling until another write "
           "occurs.",
           r->write_index);
     r->read_index = last_read_index(r);
+    ch = r->contents[r->read_index];
+  } else {
+    r->read_index = (r->read_index + 1) % r->length;
+    ch = r->contents[r->read_index];
   }
-
-  r->read_index = (r->read_index + 1) % r->length;
 
   return ch;
 }
