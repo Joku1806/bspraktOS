@@ -5,9 +5,9 @@
 // FIXME: vielleicht off-by-one?
 #define STACK_TOP_ADDRESS 128 * 1024 * 1024
 
-// Jeder Stack kriegt fürs erste 1MB, vielleicht ein bisschen
+// Jeder Stack kriegt fürs erste 1kB, vielleicht ein bisschen
 // übertrieben, aber den Platz haben wir im Moment noch :^)
-#define STACK_SIZE 1024 * 1024
+#define STACK_SIZE 1024
 
 // Stackpointer für die verschiedenen Interrupt-Handler.
 #define USER_SYSTEM_SP STACK_TOP_ADDRESS
