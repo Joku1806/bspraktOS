@@ -14,14 +14,15 @@ volatile uint32_t *pl001_register(register_offsets offset) {
 void pl001_setup() {
   pl001_buffer_internal =
       ringbuffer_create(pl001_buffer_contents_internal, UART_INPUT_BUFFER_SIZE);
+  *pl001_register(IMSC) |= RXIM;
 }
 
 void pl001_receive() {
   ringbuffer_write(&pl001_buffer_internal, *pl001_register(DR));
 }
 
-char pl001_read(){
-  while(!pl001_buffer_internal.valid_reads){}
+char pl001_read() {
+  while (!pl001_buffer_internal.valid_reads) {}
   return ringbuffer_read(&pl001_buffer_internal);
 }
 

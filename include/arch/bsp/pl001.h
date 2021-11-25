@@ -30,6 +30,10 @@ typedef enum {
   TXFF = 1 << 5,
 } FR_FLAGS;
 
+typedef enum {
+  RXIM = 1 << 4,
+} IMSC_flags;
+
 void pl001_receive();
 void pl001_send(char ch);
 char pl001_read();
