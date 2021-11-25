@@ -71,4 +71,5 @@ _irq:
   mov r0, sp
   bl irq_interrupt_handler
   ldmfd sp, {r0-r14}
+  sub lr, lr, #4
   movs pc, lr
