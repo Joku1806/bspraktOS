@@ -1,6 +1,7 @@
 #ifndef PL001_H
 #define PL001_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define UART_BASE (0x7E201000 - 0x3F000000)
@@ -36,6 +37,7 @@ typedef enum {
 
 void pl001_receive();
 void pl001_send(char ch);
+bool pl001_new_character_arrived();
 char pl001_read();
 void pl001_setup();
 

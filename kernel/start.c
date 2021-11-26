@@ -9,18 +9,25 @@
 #include <stddef.h>
 
 bool print_registers = false;
+#define NUM_CALCULATION_CYCLES 50
+
+void wait_for_counter(size_t target) {
+  size_t counter = 0;
+
+  while (counter != target) {
+    asm volatile("" ::: "memory");
+    counter++;
+  }
+}
 
 void important_calculations() {
-  size_t counter = 0;
   for (;;) {
-    while (counter != BUSY_WAIT_COUNTER) {
-      asm volatile("" ::: "memory");
-      counter++;
+    while (!pl001_new_character_arrived()) {}
+    for (size_t cycles = 0; cycles < NUM_CALCULATION_CYCLES; cycles++) {
+      wait_for_counter(BUSY_WAIT_COUNTER);
+      char ch = pl001_read();
+      kprintf("%c", ch);
     }
-
-    counter = 0;
-    char ch = pl001_read();
-    kprintf("%c", ch);
   }
 }
 
@@ -29,6 +36,7 @@ void start_kernel() {
   pl001_setup();
 
   for (;;) {
+    while (!pl001_new_character_arrived()) {}
     char ch = pl001_read();
 
     switch (ch) {

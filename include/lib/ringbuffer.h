@@ -15,6 +15,7 @@ typedef struct {
 
 ringbuffer ringbuffer_create(char *contents, size_t length);
 
+bool ringbuffer_write_occured(ringbuffer *r);
 void ringbuffer_write(ringbuffer *r, char ch);
 char ringbuffer_read(ringbuffer *r);
 

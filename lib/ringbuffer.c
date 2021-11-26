@@ -21,8 +21,12 @@ ringbuffer ringbuffer_create(char *contents, size_t length) {
   return new;
 }
 
-size_t last_read_index(ringbuffer *r) {
-  return r->read_index == 0 ? r->length - 1 : r->read_index - 1;
+size_t ringbuffer_next_index(size_t *index, size_t length) {
+  return (*index + 1) % length;
+}
+
+bool ringbuffer_write_occured(ringbuffer *r) {
+  return ringbuffer_next_index(&r->read_index, r->length) != r->write_index;
 }
 
 char ringbuffer_read(ringbuffer *r) {
@@ -30,22 +34,11 @@ char ringbuffer_read(ringbuffer *r) {
   r->ignore_writes = false;
   while (!r->valid_reads) {}
 
-  dbgln("Read character code %u at read index %u (write index %u)", ch,
-        r->read_index, r->write_index);
-
-  char ch;
-  if (r->read_index == r->write_index) {
-    dbgln("Read index hit write index %u, now stalling until another write "
-          "occurs.",
-          r->write_index);
-    r->read_index = last_read_index(r);
-    ch = r->contents[r->read_index];
-  } else {
-    r->read_index = (r->read_index + 1) % r->length;
-    ch = r->contents[r->read_index];
+  if (ringbuffer_next_index(&r->read_index, r->length) != r->write_index) {
+    r->read_index = ringbuffer_next_index(&r->read_index, r->length);
   }
 
-  return ch;
+  return r->contents[r->read_index];
 }
 
 void ringbuffer_write(ringbuffer *r, char ch) {
@@ -56,7 +49,7 @@ void ringbuffer_write(ringbuffer *r, char ch) {
     return;
   }
 
-  if (r->write_index == last_read_index(r)) {
+  if (ringbuffer_next_index(&r->write_index, r->length) == r->read_index) {
     dbgln("Write index will hit read index %u in next call, now blocking until "
           "read is called again.",
           r->read_index);
@@ -64,5 +57,5 @@ void ringbuffer_write(ringbuffer *r, char ch) {
   }
 
   r->contents[r->write_index] = ch;
-  r->write_index = (r->write_index + 1) % r->length;
+  r->write_index = ringbuffer_next_index(&r->write_index, r->length);
 }

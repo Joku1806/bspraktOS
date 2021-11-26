@@ -21,6 +21,10 @@ void pl001_receive() {
   ringbuffer_write(&pl001_buffer_internal, *pl001_register(DR));
 }
 
+bool pl001_new_character_arrived() {
+  return ringbuffer_write_occured(&pl001_buffer_internal);
+}
+
 char pl001_read() { return ringbuffer_read(&pl001_buffer_internal); }
 
 void pl001_send(char ch) {
