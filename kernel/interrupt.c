@@ -93,7 +93,7 @@ void irq_interrupt_handler(uint32_t *regs) {
   }
 
   if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
-    reset_systimer();
+    systimer_reset();
   } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
   }

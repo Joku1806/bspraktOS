@@ -6,10 +6,10 @@
 extern bool timer_interrupt_output;
 
 volatile uint32_t *systimer_register(systimer_offsets offset) {
-  return (volatile uint32_t *)(TIMER_BASE + offset);
+  return (volatile uint32_t *)(SYSTIMER_BASE + offset);
 }
 
-void reset_systimer() {
+void systimer_reset() {
   if (timer_interrupt_output) {
     kprintf("!\n");
   }

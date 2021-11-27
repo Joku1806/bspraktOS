@@ -34,7 +34,7 @@ void important_calculations() {
 }
 
 void start_kernel() {
-  reset_systimer();
+  systimer_reset();
   pl001_setup();
 
   for (;;) {

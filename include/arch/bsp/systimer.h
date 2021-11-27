@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-#define TIMER_BASE (0x7E003000 - 0x3F000000)
+#define SYSTIMER_BASE (0x7E003000 - 0x3F000000)
 
 typedef enum {
   CS = 0x0,
@@ -12,4 +12,4 @@ typedef enum {
   M1 = 1 << 1,
 } control_flags;
 
-void reset_systimer();
+void systimer_reset();
