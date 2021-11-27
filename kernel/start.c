@@ -5,6 +5,7 @@
 #include <kernel/kprintf.h>
 #include <kernel/regcheck.h>
 #include <lib/debug.h>
+#include <lib/timing.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -26,7 +27,7 @@ void important_calculations() {
   for (;;) {
     while (!pl001_new_character_arrived()) {}
     for (size_t cycles = 0; cycles < NUM_CALCULATION_CYCLES; cycles++) {
-      wait_for_counter(BUSY_WAIT_COUNTER);
+      sleep_mhz(BUSY_WAIT_COUNTER);
       char ch = pl001_read();
       kprintf("%c", ch);
     }
