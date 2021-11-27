@@ -9,6 +9,7 @@
 #include <stddef.h>
 
 bool print_registers = false;
+bool timer_interrupt_output = false;
 #define NUM_CALCULATION_CYCLES 50
 
 void wait_for_counter(size_t target) {
@@ -21,6 +22,7 @@ void wait_for_counter(size_t target) {
 }
 
 void important_calculations() {
+  timer_interrupt_output = true;
   for (;;) {
     while (!pl001_new_character_arrived()) {}
     for (size_t cycles = 0; cycles < NUM_CALCULATION_CYCLES; cycles++) {
