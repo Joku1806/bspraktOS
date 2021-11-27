@@ -45,26 +45,10 @@
 BIN_LSG = 
 
 # Hier eure source files hinzufügen
-SRC = arch/bsp/interrupt_peripherals.c \
-			arch/bsp/pl001.c \
-			arch/bsp/systimer.c \
-			arch/cpu/entry.S \
-			arch/cpu/interrupt_vector_table.S \
-			arch/cpu/regcheck_asm.S \
-			arch/cpu/mission_control.c \
-			arch/cpu/psr.c \
-			arch/cpu/dfsr.c \
-			arch/cpu/ifsr.c \
-			kernel/start.c \
-			kernel/interrupt.c \
-			kernel/kprintf.c \
-			kernel/regcheck.c \
-			lib/character_types.c \
-			lib/ringbuffer.c \
-			lib/string.c
+SRC = $(shell find arch kernel lib -name '*.[cS]')
 
 # Hier separate user files hinzufügen
-USRC = user/main.c
+USRC = $(shell find user -name '*.[cS]')
 
 # Wenn ihr zuhause arbeitet, hier das TFTP-Verzeichnis eintragen
 TFTP_PATH = /srv/tftp
