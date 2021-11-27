@@ -2,6 +2,7 @@
 #include <config.h>
 #include <kernel/kprintf.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 extern bool timer_interrupt_output;
 
@@ -17,3 +18,5 @@ void systimer_reset() {
   *systimer_register(CS) |= M1;
   *systimer_register(C1) = *systimer_register(CLO) + TIMER_INTERVAL;
 }
+
+uint32_t systimer_value() { return *systimer_register(CLO); }

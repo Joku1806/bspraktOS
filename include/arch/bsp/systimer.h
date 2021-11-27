@@ -1,6 +1,7 @@
 #include <stdint.h>
 
 #define SYSTIMER_BASE (0x7E003000 - 0x3F000000)
+#define SYSTIMER_FREQUENCY_HZ 1000000
 
 typedef enum {
   CS = 0x0,
@@ -13,3 +14,4 @@ typedef enum {
 } control_flags;
 
 void systimer_reset();
+uint32_t systimer_value();
