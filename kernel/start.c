@@ -24,9 +24,25 @@ void important_calculations() {
   }
 }
 
+void print_menu() {
+  kprintf("Willkommen in unserem Betriebssystem!\n"
+          "Interrupts ==========================\n"
+          "a: Data Abort auslösen\n"
+          "p: Prefetch Abort auslösen\n"
+          "s: Software Interrupt auslösen\n"
+          "u: Undefined Instruction auslösen\n"
+          "Debughilfen =========================\n"
+          "c: Registerchecker ausführen\n"
+          "d: Registerdump an/ausschalten\n"
+          "Funktionalität ======================\n"
+          "e: Unterprogramm ausführen\n"
+          "?: Dieses Menü anzeigen\n\n");
+}
+
 void start_kernel() {
   systimer_reset();
   pl001_setup();
+  print_menu();
 
   for (;;) {
     while (!pl001_new_character_arrived()) {}
@@ -53,6 +69,9 @@ void start_kernel() {
         break;
       case 'e':
         important_calculations();
+        break;
+      case '?':
+        print_menu();
         break;
     }
   }
