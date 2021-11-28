@@ -21,7 +21,7 @@
                "msr cpsr_cxsf, r0 \n\t"                                        \
                : "=r"(*(store)), "=r"(*((store) + 1)), "=r"(*((store) + 2))    \
                : "I"(mode)                                                     \
-               : "r0", "memory")
+               : "memory")
 
 typedef struct {
   char *mnemonic;
