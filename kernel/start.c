@@ -47,25 +47,24 @@ void start_kernel() {
   for (;;) {
     while (!pl001_new_character_arrived()) {}
     char ch = pl001_read();
-
     switch (ch) {
-      case 's':
-        asm volatile("svc #0");
-        break;
       case 'a':
         asm volatile("mov r0, #0x1 \n ldr r0, [r0]");
-        break;
-      case 'u':
-        asm volatile(".word 0xf7f0a000\n");
         break;
       case 'p':
         asm volatile("bkpt #0");
         break;
-      case 'd':
-        print_registers = !print_registers;
+      case 's':
+        asm volatile("svc #0");
+        break;
+      case 'u':
+        asm volatile(".word 0xf7f0a000\n");
         break;
       case 'c':
         register_checker();
+        break;
+      case 'd':
+        print_registers = !print_registers;
         break;
       case 'e':
         important_calculations();
