@@ -161,7 +161,6 @@ void print_various_mode_registers(register_layout_part *layout) {
       psr_mode_undefined};
   uint32_t mode_regs[NUMBER_OF_USED_MODES * 3];
 
-  // FIXME: rausfinden wie man clangd dazu bringt Fehlermeldung zu ignorieren
   GET_MODE_REGS(psr_mode_system, &mode_regs[0]);
   GET_MODE_REGS(psr_mode_supervisor, &mode_regs[3]);
   GET_MODE_REGS(psr_mode_abort, &mode_regs[6]);
