@@ -1,12 +1,8 @@
 #include <arch/bsp/systimer.h>
 #include <lib/timing.h>
 
-size_t mhz_to_milliseconds(size_t mhz) {
-  return (size_t)(mhz / (SYSTIMER_FREQUENCY_HZ * 1000.0));
-}
-
 size_t milliseconds_to_mhz(size_t ms) {
-  return (size_t)(ms * SYSTIMER_FREQUENCY_HZ / 1000.0);
+  return ms * SYSTIMER_FREQUENCY_HZ / 1000;
 }
 
 void sleep_milliseconds(size_t ms) {
