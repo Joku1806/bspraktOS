@@ -1,0 +1,16 @@
+1. Soll der Scheduler in einem eigenen thread ausgeführt werden.(Somewhat beantwortet)
+
+2. Woher soll man in der thread_create function wissen, ob man Beispielweise einen char oder eine long etc. übergeben bekommt, wenn man nur bytes übergeben bekommt. -- bzw. wie sollen die bytes interpretiert werden.
+
+3. Soll man die kontext-switch funktion in c oder assembly schreiben?
+
+4. Was soll der thread machen wenn er nichts zu tun hat? Endlosschleife? was ist mit dem programm counter?(halbwegs beantwortet)
+
+5. Soll es verschiedene threads für "WFI" und für den Scheduler geben, oder teilen sie sich einen?
+
+(6.) Wie soll man den Code organisieren (wir haben zu viele Dateien)
+
+
+
+
+## THREAD BEENDEN: Status ändern auf finished, Register können ignoriert werden.
