@@ -8,4 +8,6 @@ typedef enum {
   finished = 3,
 } thread_status;
 
+void thread_cleanup();
+
 #endif
