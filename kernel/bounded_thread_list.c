@@ -26,26 +26,39 @@ void thread_list_initialise() {
   }
 }
 
-void transfer_list(node *l1, node **l2) {
-  VERIFY(l1 != NULL && l2 != NULL);
+node *get_thread_list_head(thread_status status) {
+  switch (status) {
+    case ready:
+      return ready_head;
+    case waiting:
+      return waiting_head;
+    case running:
+      return running_head;
+    case finished:
+      return finished_head;
+  }
+}
 
-  if (l1->previous != NULL) {
-    l1->previous->next = l1->next;
+void transfer_node_to_list(node *tcb_node, node *list) {
+  VERIFY(tcb_node != NULL && list != NULL);
+
+  if (tcb_node->previous != NULL) {
+    tcb_node->previous->next = tcb_node->next;
   }
 
-  if (l1->next != NULL) {
-    l1->next->previous = l1->previous;
+  if (tcb_node->next != NULL) {
+    tcb_node->next->previous = tcb_node->previous;
   }
 
-  if (*l2 == NULL) {
-    *l2 = l1;
-    l1->previous = l1;
-    l1->next = l1;
+  if (list == NULL) {
+    list = tcb_node;
+    tcb_node->previous = tcb_node;
+    tcb_node->next = tcb_node;
   } else {
-    l1->previous = (*l2);
-    l1->next = (*l2)->next;
+    tcb_node->previous = list;
+    tcb_node->next = list->next;
 
-    (*l2)->next->previous = l1;
-    (*l2)->next = l1;
+    list->next->previous = tcb_node;
+    list->next = tcb_node;
   }
 }

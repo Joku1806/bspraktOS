@@ -17,4 +17,8 @@ typedef struct {
   uint32_t cpsr;
 } tcb;
 
+void thread_list_initialise();
+node *get_thread_list_head(thread_status status);
+void transfer_node_to_list(node *tcb_node, node *list);
+
 #endif
