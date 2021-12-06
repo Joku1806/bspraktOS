@@ -1,7 +1,9 @@
+#include "kernel/bounded_thread_list.h"
 #include <arch/bsp/pl001.h>
 #include <arch/bsp/systimer.h>
 #include <arch/cpu/mission_control.h>
 #include <config.h>
+#include <kernel/bounded_thread_list.h>
 #include <kernel/kprintf.h>
 #include <kernel/regcheck.h>
 #include <lib/debug.h>
@@ -42,6 +44,7 @@ void print_menu() {
 void start_kernel() {
   systimer_reset();
   pl001_setup();
+  thread_list_initialise();
   print_menu();
 
   for (;;) {

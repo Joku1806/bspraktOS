@@ -93,6 +93,10 @@ void irq_interrupt_handler(uint32_t *regs) {
   }
 
   if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
+    // TODO:
+    // 1. nachschauen ob Thread ready ist
+    // 2. wenn ja, eigene Register in tcb speichern
+    // 3. schedule_next_thread aufrufen
     systimer_reset();
   } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
