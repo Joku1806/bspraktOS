@@ -87,4 +87,10 @@ void transfer_thread_block_to_list(node *tcb_node, node *list) {
     list->next = tcb_node;
   }
 }
+
+void thread_cleanup() {
+  node *me = get_thread_list_head(running);
+  reset_thread_context(((tcb *)me)->index);
+  transfer_thread_block_to_list(me, get_thread_list_head(finished));
+  schedule_thread();
 }
