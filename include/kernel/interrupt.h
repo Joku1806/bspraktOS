@@ -1,16 +1,13 @@
 #ifndef INTERRUPT_H
 #define INTERRUPT_H
 
+#include <arch/cpu/registers.h>
 #include <stddef.h>
 #include <stdint.h>
 
 #define BIT_NEEDLE 0x80000000
 #define REGISTER_BIT_WIDTH 32
 #define MAX_MODE_NAME_LENGTH 10
-
-#define SP_POSITION 13
-#define LR_POSITION 14
-#define PC_POSITION 15
 
 #define GET_MODE_REGS(mode, store)                                             \
   asm volatile("mrs r0, cpsr \n\t"                                             \
