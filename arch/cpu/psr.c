@@ -1,5 +1,6 @@
 #include <arch/cpu/psr.h>
 #include <lib/assertions.h>
+#include <stdint.h>
 
 const char *get_mode_name(uint32_t psr) {
   switch (psr & psr_mode) {
@@ -20,4 +21,10 @@ const char *get_mode_name(uint32_t psr) {
   }
 
   VERIFY_NOT_REACHED();
+}
+
+uint32_t get_spsr() {
+  uint32_t spsr;
+  asm("msr %0, spsr \t\n" : "=r"(spsr));
+  return spsr;
 }

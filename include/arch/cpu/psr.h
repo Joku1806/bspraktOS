@@ -38,6 +38,7 @@ typedef enum {
 } psr_mode_bits;
 
 const char *get_mode_name(uint32_t psr);
+uint32_t get_spsr();
 
 #endif
 
