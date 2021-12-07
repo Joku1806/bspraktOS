@@ -24,6 +24,14 @@ void reset_thread_context(size_t index) {
   blocks[index].regs[PC_POSITION] = (uint32_t)main;
 }
 
+void save_thread_context(tcb *thread, uint32_t *regs, uint32_t cpsr) {
+  for (size_t index = 0; index < 16; index++) {
+    thread->regs[index] = regs[index];
+  }
+
+  thread->cpsr = cpsr;
+}
+
 void thread_list_initialise() {
   for (size_t i = 0; i < TCB_LIST_SIZE; i++) {
     node *current = (node *)&blocks[i];
