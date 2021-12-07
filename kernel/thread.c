@@ -15,6 +15,14 @@ node *waiting_head = NULL;
 node *running_head = NULL;
 node *finished_head = (node *)&blocks[0];
 
+void reset_thread_context(size_t index) {
+  blocks[index].index = index;
+  blocks[index].cpsr = psr_mode_user;
+  blocks[index].regs[SP_POSITION] = THREAD_SP_BASE - index * STACK_SIZE;
+  blocks[index].regs[LR_POSITION] = (uint32_t)thread_cleanup;
+  blocks[index].regs[PC_POSITION] = (uint32_t)main;
+}
+
 void thread_list_initialise() {
   for (size_t i = 0; i < TCB_LIST_SIZE; i++) {
     node *current = (node *)&blocks[i];

@@ -24,6 +24,8 @@ typedef struct {
   uint32_t cpsr;
   size_t index;
 } tcb;
+
+void reset_thread_context(size_t index);
 void thread_list_initialise();
 node *get_thread_list_head(thread_status status);
 void transfer_thread_block_to_list(node *tcb_node, node *list);
