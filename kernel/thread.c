@@ -6,6 +6,7 @@
 #include <lib/assertions.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <user/user_thread.h>
 
 extern void schedule_thread();
 static tcb blocks[TCB_LIST_SIZE];
