@@ -7,6 +7,8 @@
 #include <arch/cpu/psr.h>
 #include <kernel/interrupt.h>
 #include <kernel/kprintf.h>
+#include <kernel/scheduler.h>
+#include <kernel/thread.h>
 #include <lib/assertions.h>
 #include <lib/string.h>
 #include <stdint.h>
@@ -93,10 +95,12 @@ void irq_interrupt_handler(uint32_t *regs) {
   }
 
   if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
-    // TODO:
-    // 1. nachschauen ob Thread ready ist
-    // 2. wenn ja, eigene Register in tcb speichern
-    // 3. schedule_next_thread aufrufen
+    if (get_thread_list_head(ready) != NULL) {
+      save_thread_context((tcb *)get_thread_list_head(running), regs,
+                          get_spsr());
+      schedule_thread();
+    }
+
     systimer_reset();
   } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
