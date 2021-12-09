@@ -48,7 +48,7 @@
   do {                                                                         \
     kprintf(PANIC_COLOR "[PANIC] " RESET_COLOR "(" LOG_LABEL "): ");           \
     kprintf(__VA_ARGS__);                                                      \
-    kprintf("\n");                                                             \
+    kprintf("\nSystem angehalten.");                                           \
     halt_cpu();                                                                \
   } while (0)
 #else
