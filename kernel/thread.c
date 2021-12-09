@@ -12,11 +12,14 @@
 
 extern void schedule_thread();
 static tcb blocks[USER_THREAD_COUNT];
+static tcb idle_thread;
 
 node *ready_head = NULL;
 node *waiting_head = NULL;
 node *running_head = NULL;
 node *finished_head = (node *)&blocks[0];
+
+tcb *get_idle_thread_block() { return &idle_thread; }
 
 void reset_thread_context(size_t index) {
   blocks[index].index = index;
