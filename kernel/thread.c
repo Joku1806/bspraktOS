@@ -96,33 +96,32 @@ void thread_list_initialise() {
   idle_thread.regs[PC_POSITION] = (uint32_t)halt_cpu;
 }
 
-void transfer_thread_block_to_list(node *tcb_node, node *list) {
-  VERIFY(tcb_node != NULL && list != NULL);
+// FIXME: Löscht nicht Element, wenn als einziges in Liste
+void remove_thread_block_from_current_list(node *thread) {
+  VERIFY(thread != NULL);
+  VERIFY(thread->previous != NULL);
+  VERIFY(thread->next != NULL);
 
-  if (tcb_node->previous != NULL) {
-    tcb_node->previous->next = tcb_node->next;
-  }
+  thread->previous->next = thread->next;
+  thread->next->previous = thread->previous;
 
-  if (tcb_node->next != NULL) {
-    tcb_node->next->previous = tcb_node->previous;
-  }
-
-  if (list == NULL) {
-    list = tcb_node;
-    tcb_node->previous = tcb_node;
-    tcb_node->next = tcb_node;
-  } else {
-    tcb_node->previous = list;
-    tcb_node->next = list->next;
-
-    list->next->previous = tcb_node;
-    list->next = tcb_node;
-  }
+  thread->previous = thread;
+  thread->next = thread;
 }
 
-void thread_cleanup() {
-  node *me = get_thread_list_head(running);
-  reset_thread_context(((tcb *)me)->index);
-  transfer_thread_block_to_list(me, get_thread_list_head(finished));
-  schedule_thread();
+void append_thread_block_to_list(node *thread, node **list) {
+  VERIFY(thread != NULL && list != NULL);
+
+  if (*list == NULL) {
+    *list = thread;
+  } else {
+    node *head = *list;
+    VERIFY(head->next != NULL);
+
+    thread->previous = head;
+    thread->next = head->next;
+
+    head->next->previous = thread;
+    head->next = thread;
+  }
 }
