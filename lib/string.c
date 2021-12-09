@@ -1,6 +1,8 @@
+#include <lib/assertions.h>
 #include <lib/string.h>
 
 size_t strlen(const char *s) {
+  VERIFY(s != NULL);
   size_t length = 0;
   while (*s++ != '\0') {
     length++;
@@ -9,6 +11,9 @@ size_t strlen(const char *s) {
 }
 
 void *memcpy(void *dst, const void *src, size_t n) {
+  VERIFY(dst != NULL);
+  VERIFY(src != NULL);
+
   char *dst_c = (char *)dst;
   char *src_c = (char *)src;
 
