@@ -3,6 +3,9 @@
 // libc printf, wie im Aufgabenblatt empfohlen. Wenn wir das gemacht hätten,
 // würde es wahrscheinlich Abzugpunkte bis in den Minusbereich hageln :^)
 
+#define LOG_LEVEL WARNING
+#define LOG_LABEL "kprintf"
+
 #include <arch/bsp/pl001.h>
 #include <kernel/kprintf.h>
 #include <lib/assertions.h>

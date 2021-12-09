@@ -1,3 +1,6 @@
+#define LOG_LEVEL WARNING
+#define LOG_LABEL "DFSR"
+
 #include <arch/cpu/dfsr.h>
 #include <lib/assertions.h>
 

@@ -1,3 +1,6 @@
+#define LOG_LEVEL WARNING
+#define LOG_LABEL "String"
+
 #include <lib/assertions.h>
 #include <lib/string.h>
 

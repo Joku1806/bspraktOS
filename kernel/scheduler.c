@@ -1,3 +1,6 @@
+#define LOG_LEVEL WARNING
+#define LOG_LABEL "Scheduler"
+
 #include <arch/bsp/systimer.h>
 #include <arch/cpu/psr.h>
 #include <kernel/scheduler.h>

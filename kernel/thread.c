@@ -1,3 +1,6 @@
+#define LOG_LEVEL WARNING
+#define LOG_LABEL "Thread"
+
 #include <arch/bsp/stack_defines.h>
 #include <arch/cpu/mission_control.h>
 #include <arch/cpu/psr.h>

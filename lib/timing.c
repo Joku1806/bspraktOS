@@ -1,3 +1,6 @@
+#define LOG_LEVEL WARNING
+#define LOG_LABEL "Timing"
+
 #include <arch/bsp/systimer.h>
 #include <lib/timing.h>
 

@@ -1,3 +1,6 @@
+#define LOG_LEVEL WARNING
+#define LOG_LABEL "IFSR"
+
 #include <arch/cpu/ifsr.h>
 #include <lib/assertions.h>
 

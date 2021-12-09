@@ -1,3 +1,6 @@
+#define LOG_LEVEL WARNING
+#define LOG_LABEL "PSR"
+
 #include <arch/cpu/psr.h>
 #include <lib/assertions.h>
 #include <stdint.h>

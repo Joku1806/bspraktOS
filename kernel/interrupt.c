@@ -1,3 +1,6 @@
+#define LOG_LEVEL WARNING
+#define LOG_LABEL "Interrupt"
+
 #include <arch/bsp/interrupt_peripherals.h>
 #include <arch/bsp/pl001.h>
 #include <arch/bsp/systimer.h>
