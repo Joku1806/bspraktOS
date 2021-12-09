@@ -7,7 +7,8 @@
 #include <lib/assertions.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <user/user_thread.h>
+#include <string.h>
+#include <user/main.h>
 
 extern void schedule_thread();
 static tcb blocks[USER_THREAD_COUNT];
@@ -38,6 +39,34 @@ void load_thread_context(tcb *thread) {
                "ldmfd %1, {r0-r15} \n\t" ::"r"(thread->cpsr),
                "r"(thread->regs)
                : "memory");
+}
+
+void thread_create(void (*func)(void *), const void *args,
+                   unsigned int args_size) {
+  if (finished_head == NULL) {
+    return;
+  }
+
+  tcb *thread = (tcb *)&finished_head;
+
+  // 8-byte align
+  thread->regs[SP_POSITION] += args_size + (8 % (args_size % 8));
+  thread->regs[PC_POSITION] = (uint32_t)func;
+  memcpy(thread->regs[SP_POSITION], args, args_size);
+
+  remove_node_from_current_list((node *)thread);
+  append_node_to_list((node *)thread,
+                      ready_head == NULL ? &ready_head : &ready_head->previous);
+}
+
+void thread_cleanup() {
+  node *me = running_head;
+  reset_thread_context(((tcb *)me)->index);
+  remove_node_from_current_list(me);
+  append_node_to_list(me, &finished_head);
+  // FIXME: sollte nicht gemacht werden. Optimal wäre wenn wir dafür einen
+  // syscall schreiben der dann in einem privilegierten Modus alles macht.
+  schedule_thread(((tcb *)me)->regs);
 }
 
 void thread_list_initialise() {
