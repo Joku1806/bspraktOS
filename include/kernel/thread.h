@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #define USER_THREAD_COUNT 32
+#define IDLE_THREAD_INDEX USER_THREAD_COUNT
 
 typedef enum {
   ready = 0,
@@ -25,6 +26,7 @@ typedef struct {
   size_t index;
 } tcb;
 
+tcb idle_thread;
 node *ready_head;
 node *waiting_head;
 node *running_head;

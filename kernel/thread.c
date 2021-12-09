@@ -1,4 +1,5 @@
 #include <arch/bsp/stack_defines.h>
+#include <arch/cpu/mission_control.h>
 #include <arch/cpu/psr.h>
 #include <arch/cpu/registers.h>
 #include <kernel/scheduler.h>
@@ -57,8 +58,13 @@ void thread_list_initialise() {
 
     reset_thread_context(i);
   }
-}
 
+  idle_thread.index = IDLE_THREAD_INDEX;
+  idle_thread.cpsr = psr_mode_user;
+  idle_thread.regs[SP_POSITION] =
+      THREAD_SP_BASE - IDLE_THREAD_INDEX * STACK_SIZE;
+  idle_thread.regs[LR_POSITION] = (uint32_t)thread_cleanup;
+  idle_thread.regs[PC_POSITION] = (uint32_t)halt_cpu;
 }
 
 void transfer_thread_block_to_list(node *tcb_node, node *list) {
