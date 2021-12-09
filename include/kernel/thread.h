@@ -19,7 +19,7 @@ typedef struct node {
 } node;
 
 typedef struct {
-  node *node;
+  node node;
   uint32_t regs[16];
   uint32_t cpsr;
   size_t index;
