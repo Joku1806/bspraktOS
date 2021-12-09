@@ -9,7 +9,7 @@
 #include <user/user_thread.h>
 
 extern void schedule_thread();
-static tcb blocks[TCB_LIST_SIZE];
+static tcb blocks[USER_THREAD_COUNT];
 
 node *ready_head = NULL;
 node *waiting_head = NULL;
@@ -40,15 +40,16 @@ void load_thread_context(tcb *thread) {
 }
 
 void thread_list_initialise() {
-  for (size_t i = 0; i < TCB_LIST_SIZE; i++) {
+  for (size_t i = 0; i < USER_THREAD_COUNT; i++) {
     node *current = (node *)&blocks[i];
+    // FIXME: vllt Macro für sowas?
     if (i > 0) {
       current->previous = (node *)&blocks[i - 1];
     } else {
-      current->previous = (node *)&blocks[TCB_LIST_SIZE - 1];
+      current->previous = (node *)&blocks[USER_THREAD_COUNT - 1];
     }
 
-    if (i < TCB_LIST_SIZE - 1) {
+    if (i < USER_THREAD_COUNT - 1) {
       current->next = (node *)&blocks[i + 1];
     } else {
       current->next = (node *)&blocks[0];

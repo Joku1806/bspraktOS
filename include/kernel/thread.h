@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define TCB_LIST_SIZE 32
+#define USER_THREAD_COUNT 32
 
 typedef enum {
   ready = 0,
