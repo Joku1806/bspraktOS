@@ -1,4 +1,4 @@
-#define LOG_LEVEL WARNING
+#define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "DFSR"
 
 #include <arch/cpu/dfsr.h>

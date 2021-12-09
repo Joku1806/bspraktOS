@@ -1,4 +1,4 @@
-#define LOG_LEVEL WARNING
+#define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "Thread"
 
 #include <arch/bsp/stack_defines.h>
@@ -41,7 +41,7 @@ void save_thread_context(tcb *thread, uint32_t *regs, uint32_t cpsr) {
 }
 
 void load_thread_context(tcb *thread, uint32_t *current_thread_regs) {
-  memcpy(current_thread_regs, thread->regs, 16);
+  memcpy(current_thread_regs, thread->regs, 16 * 4);
   // TODO: spsr vs spsr_usr?
   asm volatile("msr spsr, %0 \n\t" ::"I"(psr_mode_user) : "memory");
 }
@@ -92,6 +92,10 @@ void thread_list_initialise() {
 
     reset_thread_context(i);
   }
+
+  node *idle_thread_node = (node *)&idle_thread;
+  idle_thread_node->previous = idle_thread_node;
+  idle_thread_node->next = idle_thread_node;
 
   idle_thread.index = IDLE_THREAD_INDEX;
   idle_thread.cpsr = psr_mode_user;
