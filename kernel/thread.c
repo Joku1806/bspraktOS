@@ -5,9 +5,9 @@
 #include <kernel/scheduler.h>
 #include <kernel/thread.h>
 #include <lib/assertions.h>
+#include <lib/string.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 #include <user/main.h>
 
 extern void schedule_thread();
@@ -34,11 +34,10 @@ void save_thread_context(tcb *thread, uint32_t *regs, uint32_t cpsr) {
   thread->cpsr = cpsr;
 }
 
-void load_thread_context(tcb *thread) {
-  asm volatile("msr cpsr, %0 \n\t"
-               "ldmfd %1, {r0-r15} \n\t" ::"r"(thread->cpsr),
-               "r"(thread->regs)
-               : "memory");
+void load_thread_context(tcb *thread, uint32_t *current_thread_regs) {
+  memcpy(current_thread_regs, thread->regs, 16);
+  // TODO: spsr vs spsr_usr?
+  asm volatile("msr spsr, %0 \n\t" ::"I"(psr_mode_user) : "memory");
 }
 
 void thread_create(void (*func)(void *), const void *args,

@@ -29,10 +29,5 @@ void schedule_thread(uint32_t *thread_regs) {
   remove_node_from_current_list(next_running_thread);
   append_node_to_list(next_running_thread, &running_head);
   systimer_reset();
-  // Das hier ist die falsche Herangehensweise!!!
-  // Wir ruinieren uns dadurch den Exception Stack, weil wir nicht mehr aus der
-  // Exception rauskommen. Stattdessen sollten die gespeicherten Register auf
-  // dem Stack und SPSR überschrieben werden und vom Handler am Ende
-  // wiederhergestellt werden.
-  load_thread_context((tcb *)next_running_thread);
+  load_thread_context((tcb *)next_running_thread, thread_regs);
 }
