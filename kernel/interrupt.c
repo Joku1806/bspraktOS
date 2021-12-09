@@ -95,12 +95,7 @@ void irq_interrupt_handler(uint32_t *regs) {
   }
 
   if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
-    if (get_thread_list_head(ready) != NULL) {
-      save_thread_context((tcb *)get_thread_list_head(running), regs,
-                          get_spsr());
-      schedule_thread();
-    }
-
+    schedule_thread(regs);
     systimer_reset();
   } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
