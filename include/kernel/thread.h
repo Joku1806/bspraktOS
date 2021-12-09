@@ -26,11 +26,11 @@ typedef struct {
   size_t index;
 } tcb;
 
-tcb idle_thread;
-node *ready_head;
-node *waiting_head;
-node *running_head;
-node *finished_head;
+extern tcb idle_thread;
+extern node *ready_head;
+extern node *waiting_head;
+extern node *running_head;
+extern node *finished_head;
 
 void reset_thread_context(size_t index);
 void save_thread_context(tcb *thread, uint32_t *regs, uint32_t cpsr);
