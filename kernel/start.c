@@ -1,11 +1,10 @@
-#include "kernel/bounded_thread_list.h"
 #include <arch/bsp/pl001.h>
 #include <arch/bsp/systimer.h>
 #include <arch/cpu/mission_control.h>
 #include <config.h>
-#include <kernel/bounded_thread_list.h>
 #include <kernel/kprintf.h>
 #include <kernel/regcheck.h>
+#include <kernel/thread.h>
 #include <lib/debug.h>
 #include <lib/timing.h>
 #include <stdbool.h>
@@ -20,6 +19,8 @@ void important_calculations() {
   for (;;) {
     while (!pl001_new_character_arrived()) {}
     for (size_t cycles = 0; cycles < NUM_CALCULATION_CYCLES; cycles++) {
+      // FIXME: BUSY_WAIT_COUNTER sollte einfach in einer while-Schleife
+      // hochzählen, kein Wunder dass das so verdammt langsam ist
       sleep_mhz(BUSY_WAIT_COUNTER);
       kprintf("%c", pl001_read());
     }
@@ -42,6 +43,7 @@ void print_menu() {
 }
 
 void start_kernel() {
+  // FIXME: Sollten diese drei Sachen schon vorher als Setup gemacht werden?
   systimer_reset();
   pl001_setup();
   thread_list_initialise();
