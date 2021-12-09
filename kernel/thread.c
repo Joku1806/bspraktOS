@@ -59,17 +59,6 @@ void thread_list_initialise() {
   }
 }
 
-node *get_thread_list_head(thread_status status) {
-  switch (status) {
-    case ready:
-      return ready_head;
-    case waiting:
-      return waiting_head;
-    case running:
-      return running_head;
-    case finished:
-      return finished_head;
-  }
 }
 
 void transfer_thread_block_to_list(node *tcb_node, node *list) {

@@ -25,11 +25,15 @@ typedef struct {
   size_t index;
 } tcb;
 
+node *ready_head;
+node *waiting_head;
+node *running_head;
+node *finished_head;
+
 void reset_thread_context(size_t index);
 void save_thread_context(tcb *thread, uint32_t *regs, uint32_t cpsr);
 void load_thread_context(tcb *thread);
 void thread_list_initialise();
-node *get_thread_list_head(thread_status status);
 void transfer_thread_block_to_list(node *tcb_node, node *list);
 void thread_cleanup();
 
