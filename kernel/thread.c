@@ -32,6 +32,13 @@ void save_thread_context(tcb *thread, uint32_t *regs, uint32_t cpsr) {
   thread->cpsr = cpsr;
 }
 
+void load_thread_context(tcb *thread) {
+  asm volatile("msr cpsr, %0 \n\t"
+               "ldmfd %1, {r0-r15} \n\t" ::"r"(thread->cpsr),
+               "r"(thread->regs)
+               : "memory");
+}
+
 void thread_list_initialise() {
   for (size_t i = 0; i < TCB_LIST_SIZE; i++) {
     node *current = (node *)&blocks[i];
