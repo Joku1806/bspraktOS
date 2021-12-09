@@ -2,8 +2,7 @@
 #define STACK_DEFINES_H
 
 // höchste Adresse für 128MB physischen Speicher
-// FIXME: vielleicht off-by-one?
-#define STACK_TOP_ADDRESS 128 * 1024 * 1024
+#define STACK_TOP_ADDRESS 128 * 1024 * 1024 - 8
 
 // Jeder Stack kriegt fürs erste 1kB
 #define STACK_SIZE 1024 * 4
