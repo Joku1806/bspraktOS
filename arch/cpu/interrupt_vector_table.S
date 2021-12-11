@@ -33,7 +33,6 @@ _ivt:
   b halt_cpu @ wird nicht benutzt, sollte also niemals passieren
   ldr pc, =_irq
 
-@ FIXME: In Handlern sofort lr anpassen
 _undefined_instruction:
   stmfd sp, {r0-r15}
   sub sp, sp, #(SAVED_REGS_COUNT * 4)
@@ -59,6 +58,7 @@ _prefetch_abort:
   movs pc, lr
 
 _data_abort:
+  sub lr, lr, #4
   stmfd sp, {r0-r15}
   sub sp, sp, #(SAVED_REGS_COUNT * 4)
   mov r0, sp
