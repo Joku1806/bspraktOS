@@ -1,3 +1,4 @@
+#include <stddef.h>
 #define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "Timing"
 
@@ -16,4 +17,10 @@ void sleep_milliseconds(size_t ms) {
 void sleep_mhz(size_t mhz) {
   size_t initial = systimer_value();
   while (systimer_value() < initial + mhz) {}
+}
+
+void sleep_macgyver(size_t instrs) {
+  for (size_t i = 0; i < instrs; i++) {
+    asm volatile("" ::: "memory");
+  }
 }

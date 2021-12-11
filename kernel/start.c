@@ -22,9 +22,7 @@ void important_calculations() {
   for (;;) {
     while (!pl001_new_character_arrived()) {}
     for (size_t cycles = 0; cycles < NUM_CALCULATION_CYCLES; cycles++) {
-      // FIXME: BUSY_WAIT_COUNTER sollte einfach in einer while-Schleife
-      // hochzählen, kein Wunder dass das so verdammt langsam ist
-      sleep_mhz(BUSY_WAIT_COUNTER);
+      sleep_macgyver(BUSY_WAIT_COUNTER);
       kprintf("%c", pl001_read());
     }
   }
