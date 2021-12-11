@@ -1,5 +1,9 @@
+#define LOG_LEVEL DEBUG_LEVEL
+#define LOG_LABEL "Bounded Linked List"
+
 #include <lib/assertions.h>
 #include <lib/bounded_linked_list.h>
+#include <lib/debug.h>
 #include <stddef.h>
 
 void remove_node_from_current_list(node *n) {
@@ -8,6 +12,7 @@ void remove_node_from_current_list(node *n) {
   VERIFY(n->next != NULL);
 
   if (n->previous == n->next) {
+    dbgln("n = %p is only node in list.", n);
     n = NULL;
     return;
   }

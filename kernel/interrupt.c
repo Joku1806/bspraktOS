@@ -1,4 +1,4 @@
-#define LOG_LEVEL WARNING_LEVEL
+#define LOG_LEVEL DEBUG_LEVEL
 #define LOG_LABEL "Interrupt"
 
 #include <arch/bsp/interrupt_peripherals.h>
@@ -34,7 +34,11 @@ void reset_interrupt_handler(uint32_t *regs) {
   kprintf("Reset Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
   dump_registers(regs);
 
-  halt_cpu();
+  if ((get_spsr() & psr_mode) == psr_mode_user) {
+    sys$exit();
+  } else {
+    halt_cpu();
+  }
 }
 
 void undefined_instruction_interrupt_handler(uint32_t *regs) {
@@ -44,7 +48,11 @@ void undefined_instruction_interrupt_handler(uint32_t *regs) {
   kprintf("Undefined Instruction an Adresse %#010x\n", regs[LR_POSITION]);
   dump_registers(regs);
 
-  halt_cpu();
+  if ((get_spsr() & psr_mode) == psr_mode_user) {
+    sys$exit();
+  } else {
+    halt_cpu();
+  }
 }
 
 int dispatch_syscall(uint32_t *regs) {
@@ -116,6 +124,7 @@ void data_abort_interrupt_handler(uint32_t *regs) {
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) == psr_mode_user) {
+    dbgln("Detected User Thread.");
     sys$exit();
   } else {
     halt_cpu();
@@ -129,6 +138,7 @@ void irq_interrupt_handler(uint32_t *regs) {
   } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
     char ch = pl001_read();
+    dbgln("Got character %c", ch);
 
     switch (ch) {
       case 'A':
