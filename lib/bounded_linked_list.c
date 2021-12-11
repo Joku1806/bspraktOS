@@ -2,11 +2,15 @@
 #include <lib/bounded_linked_list.h>
 #include <stddef.h>
 
-// FIXME: Löscht nicht Element, wenn als einziges in Liste
 void remove_node_from_current_list(node *n) {
   VERIFY(n != NULL);
   VERIFY(n->previous != NULL);
   VERIFY(n->next != NULL);
+
+  if (n->previous == n->next) {
+    n = NULL;
+    return;
+  }
 
   n->previous->next = n->next;
   n->next->previous = n->previous;
