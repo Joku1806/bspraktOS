@@ -41,9 +41,19 @@ void save_thread_context(tcb *thread, uint32_t *regs, uint32_t cpsr) {
 }
 
 void load_thread_context(tcb *thread, uint32_t *current_thread_regs) {
-  memcpy(current_thread_regs, thread->regs, 16 * 4);
-  // TODO: spsr vs spsr_usr?
-  asm volatile("msr spsr, %0 \n\t" ::"I"(psr_mode_user) : "memory");
+  // generelle Register sowie lr(_irq) mit unserer Startfunktion überschreiben,
+  // weil am Ende des Interrupthandlers pc auf lr(_irq) gesetzt wird.
+  memcpy(current_thread_regs, thread->regs, 13 * 4);
+  current_thread_regs[LR_POSITION] = thread->regs[PC_POSITION];
+
+  // Usermode in spsr schreiben, damit am Ende des Interrupthandlers durch movs
+  // in den Usermodus gewechselt wird. Da sp und lr gebankt sind und wir hier
+  // noch im IRQ Modus sind, müssen sie auch explizit überschrieben werden.
+  asm volatile("msr spsr, %0 \n\t"
+               "msr sp_usr, %1 \n\t"
+               "msr lr_usr, %2 \n\t" ::"I"(psr_mode_user),
+               "r"(thread->regs[SP_POSITION]), "r"(thread->regs[LR_POSITION])
+               : "memory");
 }
 
 void thread_create(void (*func)(void *), const void *args,
