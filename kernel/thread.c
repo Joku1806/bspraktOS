@@ -9,6 +9,7 @@
 #include <kernel/syscall.h>
 #include <kernel/thread.h>
 #include <lib/assertions.h>
+#include <lib/modmath.h>
 #include <lib/string.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -81,25 +82,7 @@ void thread_cleanup() {
   append_node_to_list(me, &finished_head);
 }
 
-void thread_list_initialise() {
-  for (size_t i = 0; i < USER_THREAD_COUNT; i++) {
-    node *current = (node *)&blocks[i];
-    // FIXME: vllt Macro für sowas?
-    if (i > 0) {
-      current->previous = (node *)&blocks[i - 1];
-    } else {
-      current->previous = (node *)&blocks[USER_THREAD_COUNT - 1];
-    }
-
-    if (i < USER_THREAD_COUNT - 1) {
-      current->next = (node *)&blocks[i + 1];
-    } else {
-      current->next = (node *)&blocks[0];
-    }
-
-    reset_thread_context(i);
-  }
-
+void idle_thread_initialize() {
   node *idle_thread_node = (node *)&idle_thread;
   idle_thread_node->previous = idle_thread_node;
   idle_thread_node->next = idle_thread_node;
@@ -112,5 +95,13 @@ void thread_list_initialise() {
   idle_thread.regs[PC_POSITION] = (uint32_t)halt_cpu;
 }
 
+void thread_list_initialise() {
+  for (size_t i = 0; i < USER_THREAD_COUNT; i++) {
+    node *current = (node *)&blocks[i];
+    current->previous = (node *)&blocks[MODULO_SUB(i, 1, USER_THREAD_COUNT)];
+    current->previous = (node *)&blocks[MODULO_ADD(i, 1, USER_THREAD_COUNT)];
+    reset_thread_context(i);
   }
+
+  idle_thread_initialize();
 }
