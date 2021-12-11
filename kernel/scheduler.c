@@ -18,7 +18,7 @@ void schedule_thread(uint32_t *thread_regs) {
   }
 
   if (ready_thread == NULL && running_thread == NULL) {
-    next_running_thread = (node *)get_idle_thread_block();
+    next_running_thread = (node *)get_idle_thread();
   } else if (ready_thread != NULL) {
     if (running_thread != NULL) {
       save_thread_context((tcb *)running_thread, thread_regs, get_spsr());

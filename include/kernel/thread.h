@@ -27,7 +27,7 @@ extern node *waiting_head;
 extern node *running_head;
 extern node *finished_head;
 
-tcb *get_idle_thread_block();
+tcb *get_idle_thread();
 
 void reset_thread_context(size_t index);
 void save_thread_context(tcb *thread, uint32_t *regs, uint32_t cpsr);
