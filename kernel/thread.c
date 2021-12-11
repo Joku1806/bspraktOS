@@ -50,7 +50,7 @@ void load_thread_context(tcb *thread, uint32_t *current_thread_regs) {
   // Usermode in spsr schreiben, damit am Ende des Interrupthandlers durch movs
   // in den Usermodus gewechselt wird. Da sp und lr gebankt sind und wir hier
   // noch im IRQ Modus sind, müssen sie auch explizit überschrieben werden.
-  asm volatile("msr spsr, %0 \n\t"
+  asm volatile("msr spsr_cxsf, %0 \n\t"
                "msr sp_usr, %1 \n\t"
                "msr lr_usr, %2 \n\t" ::"I"(psr_mode_user),
                "r"(thread->regs[SP_POSITION]), "r"(thread->regs[LR_POSITION])
