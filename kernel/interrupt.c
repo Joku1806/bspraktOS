@@ -14,6 +14,7 @@
 #include <kernel/syscall.h>
 #include <kernel/thread.h>
 #include <lib/assertions.h>
+#include <lib/error_codes.h>
 #include <lib/string.h>
 #include <stdint.h>
 
@@ -45,29 +46,37 @@ void undefined_instruction_interrupt_handler(uint32_t *regs) {
   halt_cpu();
 }
 
-void dispatch_syscall(uint32_t *regs) {
+int dispatch_syscall(uint32_t *regs) {
   // liest Argument der auslösenden svc-Instruktion aus
   switch (get_syscall_no(regs[LR_POSITION] - 4)) {
     case SYSCALL_EXIT_NO:
       thread_cleanup();
       schedule_thread(regs);
       systimer_reset();
-      return;
+      return 0;
   }
 
-  VERIFY_NOT_REACHED();
+  return -EINVAL;
 }
 
 void software_interrupt_handler(uint32_t *regs) {
-  if (print_registers) {
+  int error = 0;
+
+  if ((get_spsr() & psr_mode) == psr_mode_user) {
+    error = -EINVAL;
+    sys$exit();
+  } else {
+    error = dispatch_syscall(regs);
+  }
+
+  if (error < 0) {
     kprintf("#############################################"
             "#######################"
             "#######\n");
     kprintf("Software Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
     dump_registers(regs);
+    halt_cpu();
   }
-
-  dispatch_syscall(regs);
 }
 
 void prefetch_abort_interrupt_handler(uint32_t *regs) {
@@ -84,7 +93,11 @@ void prefetch_abort_interrupt_handler(uint32_t *regs) {
 
   dump_registers(regs);
 
-  halt_cpu();
+  if ((get_spsr() & psr_mode) == psr_mode_user) {
+    sys$exit();
+  } else {
+    halt_cpu();
+  }
 }
 
 void data_abort_interrupt_handler(uint32_t *regs) {
@@ -101,18 +114,14 @@ void data_abort_interrupt_handler(uint32_t *regs) {
 
   dump_registers(regs);
 
-  halt_cpu();
+  if ((get_spsr() & psr_mode) == psr_mode_user) {
+    sys$exit();
+  } else {
+    halt_cpu();
+  }
 }
 
 void irq_interrupt_handler(uint32_t *regs) {
-  if (print_registers) {
-    kprintf("#############################################"
-            "#######################"
-            "#######\n");
-    kprintf("IRQ Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
-    dump_registers(regs);
-  }
-
   if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
     schedule_thread(regs);
     systimer_reset();
