@@ -1,6 +1,7 @@
 #ifndef THREAD_H
 #define THREAD_H
 
+#include <lib/bounded_linked_list.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -13,11 +14,6 @@ typedef enum {
   running = 2,
   finished = 3,
 } thread_status;
-
-typedef struct node {
-  struct node *previous;
-  struct node *next;
-} node;
 
 typedef struct {
   node node;
