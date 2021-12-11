@@ -17,6 +17,7 @@
 #include <lib/error_codes.h>
 #include <lib/string.h>
 #include <stdint.h>
+#include <user/main.h>
 
 extern bool print_registers;
 
@@ -127,6 +128,24 @@ void irq_interrupt_handler(uint32_t *regs) {
     systimer_reset();
   } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
+    char ch = pl001_read();
+
+    switch (ch) {
+      case 'A':
+        asm volatile("mov r0, #0x1 \n ldr r0, [r0]");
+        break;
+      case 'P':
+        asm volatile("bkpt #0");
+        break;
+      case 'S':
+        asm volatile("svc #1337");
+        break;
+      case 'U':
+        asm volatile(".word 0xf7f0a000\n");
+        break;
+      default:
+        thread_create(main, &ch, 1);
+    }
   }
 }
 
