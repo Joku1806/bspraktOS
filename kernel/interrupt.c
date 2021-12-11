@@ -11,6 +11,7 @@
 #include <kernel/interrupt.h>
 #include <kernel/kprintf.h>
 #include <kernel/scheduler.h>
+#include <kernel/syscall.h>
 #include <kernel/thread.h>
 #include <lib/assertions.h>
 #include <lib/string.h>
@@ -44,14 +45,29 @@ void undefined_instruction_interrupt_handler(uint32_t *regs) {
   halt_cpu();
 }
 
-void software_interrupt_handler(uint32_t *regs) {
-  kprintf("#############################################"
-          "#######################"
-          "#######\n");
-  kprintf("Software Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
-  dump_registers(regs);
+void dispatch_syscall(uint32_t *regs) {
+  // liest Argument der auslösenden svc-Instruktion aus
+  switch (get_syscall_no(regs[LR_POSITION] - 4)) {
+    case SYSCALL_EXIT_NO:
+      thread_cleanup();
+      schedule_thread(regs);
+      systimer_reset();
+      return;
+  }
 
-  halt_cpu();
+  VERIFY_NOT_REACHED();
+}
+
+void software_interrupt_handler(uint32_t *regs) {
+  if (print_registers) {
+    kprintf("#############################################"
+            "#######################"
+            "#######\n");
+    kprintf("Software Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
+    dump_registers(regs);
+  }
+
+  dispatch_syscall(regs);
 }
 
 void prefetch_abort_interrupt_handler(uint32_t *regs) {

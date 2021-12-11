@@ -6,6 +6,7 @@
 #include <arch/cpu/psr.h>
 #include <arch/cpu/registers.h>
 #include <kernel/scheduler.h>
+#include <kernel/syscall.h>
 #include <kernel/thread.h>
 #include <lib/assertions.h>
 #include <lib/string.h>
@@ -13,7 +14,6 @@
 #include <stdint.h>
 #include <user/main.h>
 
-extern void schedule_thread();
 static tcb blocks[USER_THREAD_COUNT];
 static tcb idle_thread;
 
@@ -28,7 +28,7 @@ void reset_thread_context(size_t index) {
   blocks[index].index = index;
   blocks[index].cpsr = psr_mode_user;
   blocks[index].regs[SP_POSITION] = THREAD_SP_BASE - index * STACK_SIZE;
-  blocks[index].regs[LR_POSITION] = (uint32_t)thread_cleanup;
+  blocks[index].regs[LR_POSITION] = (uint32_t)sys$exit;
   blocks[index].regs[PC_POSITION] = (uint32_t)main;
 }
 
@@ -79,9 +79,6 @@ void thread_cleanup() {
   reset_thread_context(((tcb *)me)->index);
   remove_node_from_current_list(me);
   append_node_to_list(me, &finished_head);
-  // FIXME: sollte nicht gemacht werden. Optimal wäre wenn wir dafür einen
-  // syscall schreiben der dann in einem privilegierten Modus alles macht.
-  schedule_thread(((tcb *)me)->regs);
 }
 
 void thread_list_initialise() {
@@ -111,7 +108,7 @@ void thread_list_initialise() {
   idle_thread.cpsr = psr_mode_user;
   idle_thread.regs[SP_POSITION] =
       THREAD_SP_BASE - IDLE_THREAD_INDEX * STACK_SIZE;
-  idle_thread.regs[LR_POSITION] = (uint32_t)thread_cleanup;
+  idle_thread.regs[LR_POSITION] = (uint32_t)sys$exit;
   idle_thread.regs[PC_POSITION] = (uint32_t)halt_cpu;
 }
 
