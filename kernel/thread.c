@@ -116,31 +116,31 @@ void thread_list_initialise() {
 }
 
 // FIXME: Löscht nicht Element, wenn als einziges in Liste
-void remove_node_from_current_list(node *thread) {
-  VERIFY(thread != NULL);
-  VERIFY(thread->previous != NULL);
-  VERIFY(thread->next != NULL);
+void remove_node_from_current_list(node *n) {
+  VERIFY(n != NULL);
+  VERIFY(n->previous != NULL);
+  VERIFY(n->next != NULL);
 
-  thread->previous->next = thread->next;
-  thread->next->previous = thread->previous;
+  n->previous->next = n->next;
+  n->next->previous = n->previous;
 
-  thread->previous = thread;
-  thread->next = thread;
+  n->previous = n;
+  n->next = n;
 }
 
-void append_node_to_list(node *thread, node **list) {
-  VERIFY(thread != NULL && list != NULL);
+void append_node_to_list(node *n, node **list) {
+  VERIFY(n != NULL && list != NULL);
 
   if (*list == NULL) {
-    *list = thread;
+    *list = n;
   } else {
     node *head = *list;
     VERIFY(head->next != NULL);
 
-    thread->previous = head;
-    thread->next = head->next;
+    n->previous = head;
+    n->next = head->next;
 
-    head->next->previous = thread;
-    head->next = thread;
+    head->next->previous = n;
+    head->next = n;
   }
 }
