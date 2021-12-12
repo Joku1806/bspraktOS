@@ -88,10 +88,13 @@ void thread_create(void (*func)(void *), const void *args,
 
   tcb *thread = (tcb *)&finished_head;
 
-  // 8-byte align
-  thread->regs[SP_POSITION] -= args_size + (8 % (args_size % 8));
-  thread->regs[PC_POSITION] = (uint32_t)func;
+  thread->regs[SP_POSITION] -= args_size;
   memcpy((void *)thread->regs[SP_POSITION], args, args_size);
+  if (args_size % 8 != 0) { // 8-byte align
+    thread->regs[SP_POSITION] -= 8 - args_size % 8;
+  }
+
+  thread->regs[PC_POSITION] = (uint32_t)func;
 
   remove_node_from_current_list((node *)thread);
   append_node_to_list((node *)thread,
