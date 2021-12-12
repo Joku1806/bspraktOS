@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define USER_THREAD_COUNT 32
+#define USER_THREAD_COUNT 4
 #define IDLE_THREAD_INDEX USER_THREAD_COUNT
 
 typedef enum {
@@ -22,16 +22,12 @@ typedef struct {
   size_t index;
 } tcb;
 
-extern node *ready_head;
-extern node *waiting_head;
-extern node *running_head;
-extern node *finished_head;
-
 tcb *get_idle_thread();
+node *get_thread_list_head(thread_status status);
 
 void reset_thread_context(size_t index);
 void save_thread_context(tcb *thread, uint32_t *regs, uint32_t cpsr);
-void load_thread_context(tcb *thread, uint32_t *current_thread_regs);
+void perform_stack_context_switch(uint32_t *current_thread_regs, tcb *thread);
 void thread_list_initialise();
 void thread_create(void (*func)(void *), const void *args,
                    unsigned int args_size);

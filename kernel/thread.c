@@ -9,6 +9,7 @@
 #include <kernel/syscall.h>
 #include <kernel/thread.h>
 #include <lib/assertions.h>
+#include <lib/bounded_linked_list.h>
 #include <lib/modmath.h>
 #include <lib/string.h>
 #include <stddef.h>
@@ -17,12 +18,27 @@
 static tcb blocks[USER_THREAD_COUNT];
 static tcb idle_thread;
 
-node *ready_head = NULL;
-node *waiting_head = NULL;
-node *running_head = NULL;
-node *finished_head = (node *)&blocks[0];
+node ready_head = {.previous = NULL, .next = NULL};
+node waiting_head = {.previous = NULL, .next = NULL};
+node running_head = {.previous = NULL, .next = NULL};
+node finished_head = {.previous = NULL, .next = (node *)blocks};
 
 tcb *get_idle_thread() { return &idle_thread; }
+
+node *get_thread_list_head(thread_status status) {
+  switch (status) {
+    case ready:
+      return &ready_head;
+    case waiting:
+      return &waiting_head;
+    case running:
+      return &running_head;
+    case finished:
+      return &finished_head;
+  }
+
+  VERIFY_NOT_REACHED();
+}
 
 void reset_thread_context(size_t index) {
   blocks[index].index = index;
@@ -64,15 +80,17 @@ void save_thread_context(tcb *thread, uint32_t *regs, uint32_t cpsr) {
   thread->cpsr = cpsr;
 }
 
-void load_thread_context(tcb *thread, uint32_t *current_thread_regs) {
-  // generelle Register sowie lr(_irq) mit unserer Startfunktion überschreiben,
-  // weil am Ende des Interrupthandlers pc auf lr(_irq) gesetzt wird.
+void perform_stack_context_switch(uint32_t *current_thread_regs, tcb *thread) {
+  // generelle Register sowie lr(_irq) mit unserer Startfunktion
+  // überschreiben, weil am Ende des Interrupthandlers pc auf lr(_irq) gesetzt
+  // wird.
   memcpy(current_thread_regs, thread->regs, 13 * 4);
   current_thread_regs[LR_POSITION] = thread->regs[PC_POSITION];
 
-  // Usermode in spsr schreiben, damit am Ende des Interrupthandlers durch movs
-  // in den Usermodus gewechselt wird. Da sp und lr gebankt sind und wir hier
-  // noch im IRQ Modus sind, müssen sie auch explizit überschrieben werden.
+  // Usermode in spsr schreiben, damit am Ende des Interrupthandlers durch
+  // movs in den Usermodus gewechselt wird. Da sp und lr gebankt sind und wir
+  // hier noch im IRQ Modus sind, müssen sie auch explizit überschrieben
+  // werden.
   asm volatile("msr spsr_cxsf, %0 \n\t"
                "msr sp_usr, %1 \n\t"
                "msr lr_usr, %2 \n\t" ::"I"(psr_mode_user),
@@ -82,11 +100,11 @@ void load_thread_context(tcb *thread, uint32_t *current_thread_regs) {
 
 void thread_create(void (*func)(void *), const void *args,
                    unsigned int args_size) {
-  if (finished_head == NULL) {
+  if (is_list_empty(get_thread_list_head(finished))) {
     return;
   }
 
-  tcb *thread = (tcb *)&finished_head;
+  tcb *thread = (tcb *)get_first_node(get_thread_list_head(finished));
 
   thread->regs[SP_POSITION] -= args_size;
   memcpy((void *)thread->regs[SP_POSITION], args, args_size);
@@ -96,14 +114,16 @@ void thread_create(void (*func)(void *), const void *args,
 
   thread->regs[PC_POSITION] = (uint32_t)func;
 
-  remove_node_from_current_list((node *)thread);
+  remove_node_from_list((node *)thread, get_thread_list_head(finished));
   append_node_to_list((node *)thread,
-                      ready_head == NULL ? &ready_head : &ready_head->previous);
+                      get_last_node(get_thread_list_head(ready)));
 }
 
 void thread_cleanup() {
-  node *me = running_head;
+  node *me = get_first_node(get_thread_list_head(running));
+  VERIFY(!is_list_head(me));
+
   reset_thread_context(((tcb *)me)->index);
-  remove_node_from_current_list(me);
-  append_node_to_list(me, &finished_head);
+  remove_node_from_list(me, get_thread_list_head(running));
+  append_node_to_list(me, get_thread_list_head(finished));
 }

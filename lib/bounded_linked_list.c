@@ -6,37 +6,65 @@
 #include <lib/debug.h>
 #include <stddef.h>
 
-void remove_node_from_current_list(node *n) {
+bool is_list_head(node *n) { return n->previous == NULL; }
+
+bool is_list_empty(node *list) {
+  VERIFY(is_list_head(list));
+  return list->next == NULL;
+}
+
+node *get_first_node(node *list) {
+  VERIFY(is_list_head(list));
+  return list->next == NULL ? list : list->next;
+}
+
+node *get_last_node(node *list) {
+  VERIFY(is_list_head(list));
+  return list->next == NULL ? list : list->next->previous;
+}
+
+void linked_list_connect(node *a, node *b) {
+  VERIFY(a != NULL);
+  VERIFY(b != NULL);
+
+  a->next = b;
+  b->previous = a;
+}
+
+void remove_node_from_list(node *n, node *list) {
   VERIFY(n != NULL);
   VERIFY(n->previous != NULL);
   VERIFY(n->next != NULL);
+  VERIFY(list != NULL);
+  VERIFY(is_list_head(list));
 
-  if (n->previous == n->next) {
-    dbgln("n = %p is only node in list.", n);
-    n = NULL;
-    return;
+  if (list->next == n) {
+    if (n->previous == n->next) {
+      dbgln("n = %p is first node in list.", n);
+      list->next = NULL;
+      return;
+    }
+
+    list->next = n->next;
   }
 
-  n->previous->next = n->next;
-  n->next->previous = n->previous;
-
-  n->previous = n;
-  n->next = n;
+  linked_list_connect(n->previous, n->next);
+  linked_list_connect(n, n);
 }
 
-void append_node_to_list(node *n, node **list) {
+void append_node_to_list(node *n, node *list) {
   VERIFY(n != NULL && list != NULL);
 
-  if (*list == NULL) {
-    *list = n;
+  if (is_list_head(list)) {
+    if (list->next != NULL) {
+      linked_list_connect(n, list->next);
+    }
+
+    list->next = n;
   } else {
-    node *head = *list;
-    VERIFY(head->next != NULL);
+    VERIFY(list->next != NULL);
 
-    n->previous = head;
-    n->next = head->next;
-
-    head->next->previous = n;
-    head->next = n;
+    linked_list_connect(n, list->next);
+    linked_list_connect(list, n);
   }
 }

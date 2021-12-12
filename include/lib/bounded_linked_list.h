@@ -1,12 +1,18 @@
 #ifndef BOUNDED_LINKED_LIST_H
 #define BOUNDED_LINKED_LIST_H
 
+#include <stdbool.h>
+
 typedef struct node {
   struct node *previous;
   struct node *next;
 } node;
 
-void remove_node_from_current_list(node *n);
-void append_node_to_list(node *n, node **list);
+bool is_list_head(node *n);
+bool is_list_empty(node *list);
+node *get_first_node(node *list);
+node *get_last_node(node *list);
+void remove_node_from_list(node *n, node *list);
+void append_node_to_list(node *n, node *list);
 
 #endif
