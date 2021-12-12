@@ -40,7 +40,7 @@ void print_menu() {
           "S: (System) Software Interrupt auslösen\n"
           "U: (System) Undefined Instruction auslösen\n"
           "Debughilfen =========================\n"
-          "c: (Thread) Registerchecker ausführen\n");
+          "c: (Thread) Registerchecker ausführen\n\n");
 }
 
 void start_kernel() {
