@@ -6,7 +6,11 @@
 #include <lib/debug.h>
 #include <stddef.h>
 
-bool is_list_head(node *n) { return n->previous == NULL; }
+bool is_list_head(node *n) { return n != NULL && n->previous == NULL; }
+
+bool is_list_node(node *n) {
+  return n != NULL && n->previous != NULL && n->next != NULL;
+}
 
 bool is_list_empty(node *list) {
   VERIFY(is_list_head(list));
@@ -23,24 +27,21 @@ node *get_last_node(node *list) {
   return list->next == NULL ? list : list->next->previous;
 }
 
-void linked_list_connect(node *a, node *b) {
-  VERIFY(a != NULL);
-  VERIFY(b != NULL);
+void connect_nodes(node *from, node *to) {
+  VERIFY(from != NULL);
+  VERIFY(to != NULL);
 
-  a->next = b;
-  b->previous = a;
+  from->next = to;
+  to->previous = from;
 }
 
 void remove_node_from_list(node *n, node *list) {
-  VERIFY(n != NULL);
-  VERIFY(n->previous != NULL);
-  VERIFY(n->next != NULL);
-  VERIFY(list != NULL);
+  VERIFY(is_list_node(n));
   VERIFY(is_list_head(list));
 
   if (list->next == n) {
-    if (n->previous == n->next) {
-      dbgln("n = %p is first node in list.", n);
+    if (n == n->previous && n == n->next) {
+      dbgln("n = %p is first and only node in list.", n);
       list->next = NULL;
       return;
     }
@@ -48,23 +49,23 @@ void remove_node_from_list(node *n, node *list) {
     list->next = n->next;
   }
 
-  linked_list_connect(n->previous, n->next);
-  linked_list_connect(n, n);
+  connect_nodes(n->previous, n->next);
+  connect_nodes(n, n);
 }
 
+// FIXME: list muss nicht unbedingt ein list head sein
 void append_node_to_list(node *n, node *list) {
-  VERIFY(n != NULL && list != NULL);
+  VERIFY(is_list_node(n));
+  VERIFY(is_list_node(list) || is_list_head(list));
 
   if (is_list_head(list)) {
     if (list->next != NULL) {
-      linked_list_connect(n, list->next);
+      connect_nodes(n, list->next);
     }
 
     list->next = n;
   } else {
-    VERIFY(list->next != NULL);
-
-    linked_list_connect(n, list->next);
-    linked_list_connect(list, n);
+    connect_nodes(n, list->next);
+    connect_nodes(list, n);
   }
 }
