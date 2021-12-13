@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <user/main.h>
 
+int dispatch_syscall(uint32_t *regs, uint32_t syscall_no);
 void print_register_using_layout(uint32_t reg, register_layout_part *layout);
 void print_current_mode_status_registers(register_layout_part *layout);
 void print_general_registers(uint32_t *regs);
@@ -33,7 +34,7 @@ void reset_interrupt_handler(uint32_t *regs) {
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) == psr_mode_user) {
-    sys$exit();
+    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
   } else {
     halt_cpu();
   }
@@ -47,15 +48,14 @@ void undefined_instruction_interrupt_handler(uint32_t *regs) {
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) == psr_mode_user) {
-    sys$exit();
+    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
   } else {
     halt_cpu();
   }
 }
 
-int dispatch_syscall(uint32_t *regs) {
-  // liest Argument der auslösenden svc-Instruktion aus
-  switch (get_syscall_no(regs[LR_POSITION] - 4)) {
+int dispatch_syscall(uint32_t *regs, uint32_t syscall_no) {
+  switch (syscall_no) {
     case SYSCALL_EXIT_NO:
       thread_cleanup();
       schedule_thread(regs);
@@ -67,21 +67,22 @@ int dispatch_syscall(uint32_t *regs) {
 }
 
 void software_interrupt_handler(uint32_t *regs) {
-  int error = 0;
-
-  if ((get_spsr() & psr_mode) == psr_mode_user) {
-    error = -EINVAL;
-    sys$exit();
-  } else {
-    error = dispatch_syscall(regs);
+  // -4 um lr zu korrigieren
+  uint32_t svc_address = regs[LR_POSITION] - 4;
+  if (is_syscall(svc_address) &&
+      dispatch_syscall(regs, get_syscall_no(svc_address)) >= 0) {
+    return;
   }
 
-  if (error < 0) {
-    kprintf("#############################################"
-            "#######################"
-            "#######\n");
-    kprintf("Software Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
-    dump_registers(regs);
+  kprintf("#############################################"
+          "#######################"
+          "#######\n");
+  kprintf("Software Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
+  dump_registers(regs);
+
+  if ((get_spsr() & psr_mode) == psr_mode_user) {
+    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
+  } else {
     halt_cpu();
   }
 }
@@ -101,7 +102,7 @@ void prefetch_abort_interrupt_handler(uint32_t *regs) {
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) == psr_mode_user) {
-    sys$exit();
+    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
   } else {
     halt_cpu();
   }
@@ -122,8 +123,7 @@ void data_abort_interrupt_handler(uint32_t *regs) {
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) == psr_mode_user) {
-    dbgln("Detected User Thread.");
-    sys$exit();
+    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
   } else {
     halt_cpu();
   }
