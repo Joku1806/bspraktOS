@@ -107,11 +107,11 @@ void thread_create(void (*func)(void *), const void *args,
   tcb *thread = (tcb *)get_first_node(get_thread_list_head(finished));
 
   thread->regs[SP_POSITION] -= args_size;
-  memcpy((void *)thread->regs[SP_POSITION], args, args_size);
   if (args_size % 8 != 0) { // 8-byte align
     thread->regs[SP_POSITION] -= 8 - args_size % 8;
   }
 
+  memcpy((void *)thread->regs[SP_POSITION], args, args_size);
   thread->regs[PC_POSITION] = (uint32_t)func;
 
   remove_node_from_list((node *)thread, get_thread_list_head(finished));
