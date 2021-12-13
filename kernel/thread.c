@@ -121,7 +121,7 @@ void thread_create(void (*func)(void *), const void *args,
 
 void thread_cleanup() {
   node *me = get_first_node(get_thread_list_head(running));
-  VERIFY(!is_list_head(me));
+  VERIFY(is_list_node(me));
 
   reset_thread_context(((tcb *)me)->index);
   remove_node_from_list(me, get_thread_list_head(running));
