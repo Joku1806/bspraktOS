@@ -19,8 +19,6 @@
 #include <stdint.h>
 #include <user/main.h>
 
-extern bool print_registers;
-
 void print_register_using_layout(uint32_t reg, register_layout_part *layout);
 void print_current_mode_status_registers(register_layout_part *layout);
 void print_general_registers(uint32_t *regs);
@@ -133,6 +131,7 @@ void data_abort_interrupt_handler(uint32_t *regs) {
 
 void irq_interrupt_handler(uint32_t *regs) {
   if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
+    kprintf("!");
     schedule_thread(regs);
     systimer_reset();
   } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {

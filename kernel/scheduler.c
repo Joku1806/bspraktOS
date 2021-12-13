@@ -49,4 +49,5 @@ void schedule_thread(uint32_t *thread_regs) {
   remove_node_from_list(next_thread, get_thread_list_head(ready));
   append_node_to_list(next_thread, get_thread_list_head(running));
   perform_stack_context_switch(thread_regs, (tcb *)next_thread);
+  kprintf("\n");
 }
