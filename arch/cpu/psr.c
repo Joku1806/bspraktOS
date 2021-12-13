@@ -28,6 +28,6 @@ const char *get_mode_name(uint32_t psr) {
 
 uint32_t get_spsr() {
   uint32_t spsr;
-  asm("msr spsr, %0 \n\t" : "=r"(spsr));
+  asm("mrs %0, spsr \n\t" : "=r"(spsr));
   return spsr;
 }
