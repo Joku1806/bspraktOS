@@ -26,13 +26,17 @@ void schedule_thread(uint32_t *thread_regs) {
   } else if (!is_list_empty(ready_list)) {
     dbgln("Now scheduling thread %u.",
           ((tcb *)get_first_node(ready_list))->index);
+
     if (!is_list_empty(running_list)) {
       node *current_thread = get_first_node(running_list);
-      dbgln("Thread %u is not done yet, saving context.",
-            ((tcb *)current_thread)->index);
-      save_thread_context((tcb *)current_thread, thread_regs, get_spsr());
       remove_node_from_list(current_thread, get_thread_list_head(running));
-      append_node_to_list(current_thread, get_last_node(ready_list));
+
+      if ((tcb *)current_thread != get_idle_thread()) {
+        dbgln("Thread %u is not done yet, saving context.",
+              ((tcb *)current_thread)->index);
+        append_node_to_list(current_thread, get_last_node(ready_list));
+        save_thread_context((tcb *)current_thread, thread_regs, get_spsr());
+      }
     }
 
     next_thread = get_first_node(ready_list);
