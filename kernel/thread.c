@@ -112,6 +112,7 @@ void thread_create(void (*func)(void *), const void *args,
   }
 
   memcpy((void *)thread->regs[SP_POSITION], args, args_size);
+  thread->regs[0] = thread->regs[SP_POSITION];
   thread->regs[PC_POSITION] = (uint32_t)func;
 
   remove_node_from_list((node *)thread, get_thread_list_head(finished));
