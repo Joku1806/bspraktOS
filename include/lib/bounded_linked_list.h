@@ -13,7 +13,7 @@ bool is_list_node(node *n);
 bool is_list_empty(node *list);
 node *get_first_node(node *list);
 node *get_last_node(node *list);
-void remove_node_from_list(node *n, node *list);
-void append_node_to_list(node *n, node *list);
+void remove_node_from_list(node *list, node *n);
+void append_node_to_list(node *list, node *n);
 
 #endif

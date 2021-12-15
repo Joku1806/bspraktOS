@@ -35,9 +35,9 @@ void connect_nodes(node *from, node *to) {
   to->previous = from;
 }
 
-void remove_node_from_list(node *n, node *list) {
-  VERIFY(is_list_node(n));
+void remove_node_from_list(node *list, node *n) {
   VERIFY(is_list_head(list));
+  VERIFY(is_list_node(n));
 
   if (list->next == n) {
     if (n == n->previous && n == n->next) {
@@ -54,9 +54,9 @@ void remove_node_from_list(node *n, node *list) {
 }
 
 // FIXME: list muss nicht unbedingt ein list head sein
-void append_node_to_list(node *n, node *list) {
-  VERIFY(is_list_node(n));
+void append_node_to_list(node *list, node *n) {
   VERIFY(is_list_node(list) || is_list_head(list));
+  VERIFY(is_list_node(n));
 
   if (is_list_head(list)) {
     if (list->next != NULL) {

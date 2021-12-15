@@ -115,9 +115,9 @@ void thread_create(void (*func)(void *), const void *args,
   thread->regs[0] = thread->regs[SP_POSITION];
   thread->regs[PC_POSITION] = (uint32_t)func;
 
-  remove_node_from_list((node *)thread, get_thread_list_head(finished));
-  append_node_to_list((node *)thread,
-                      get_last_node(get_thread_list_head(ready)));
+  remove_node_from_list(get_thread_list_head(finished), (node *)thread);
+  append_node_to_list(get_last_node(get_thread_list_head(ready)),
+                      (node *)thread);
 }
 
 void thread_cleanup() {
@@ -125,6 +125,6 @@ void thread_cleanup() {
   VERIFY(is_list_node(me));
 
   reset_thread_context(((tcb *)me)->index);
-  remove_node_from_list(me, get_thread_list_head(running));
-  append_node_to_list(me, get_thread_list_head(finished));
+  remove_node_from_list(get_thread_list_head(running), me);
+  append_node_to_list(get_thread_list_head(finished), me);
 }
