@@ -17,6 +17,10 @@ bool is_list_empty(node *list) {
   return list->next == NULL;
 }
 
+// FIXME: Gefährlich, den list head zurückzugeben falls die Liste leer ist
+// Im Moment haben wir damit keine Probleme, weil der Rückgabewert dieser
+// Funktionen gerade niemals als node interpretiert wird, ist aber trotzdem
+// nicht gut.
 node *get_first_node(node *list) {
   VERIFY(is_list_head(list));
   return list->next == NULL ? list : list->next;
@@ -57,6 +61,7 @@ void remove_node_from_list(node *list, node *n) {
 void append_node_to_list(node *list, node *n) {
   VERIFY(is_list_node(list) || is_list_head(list));
   VERIFY(is_list_node(n));
+  VERIFY(list != n);
 
   if (is_list_head(list)) {
     if (list->next != NULL) {
