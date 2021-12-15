@@ -20,7 +20,7 @@ void sleep_mhz(size_t mhz) {
 }
 
 void sleep_macgyver(size_t instrs) {
-  for (size_t i = 0; i < instrs; i++) {
+  for (volatile size_t i = 0; i < instrs; i++) {
     asm volatile("" ::: "memory");
   }
 }
