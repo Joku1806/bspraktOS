@@ -8,10 +8,14 @@
 #include <lib/debug.h>
 #include <stddef.h>
 
-bool is_list_head(node *n) { return n != NULL && n->previous == NULL; }
+bool is_list_head(node *n) {
+  VERIFY(n != NULL);
+  return n->previous == NULL;
+}
 
 bool is_list_node(node *n) {
-  return n != NULL && n->previous != NULL && n->next != NULL;
+  VERIFY(n != NULL);
+  return n->previous != NULL && n->next != NULL;
 }
 
 bool is_list_empty(node *list) {
@@ -19,18 +23,18 @@ bool is_list_empty(node *list) {
   return list->next == NULL;
 }
 
-// FIXME: Gefährlich, den list head zurückzugeben falls die Liste leer ist
-// Im Moment haben wir damit keine Probleme, weil der Rückgabewert dieser
-// Funktionen gerade niemals als node interpretiert wird, ist aber trotzdem
-// nicht gut.
 node *get_first_node(node *list) {
   VERIFY(is_list_head(list));
-  return list->next == NULL ? list : list->next;
+  VERIFY(!is_list_empty(list));
+  VERIFY(is_list_node(list->next));
+  return list->next;
 }
 
 node *get_last_node(node *list) {
   VERIFY(is_list_head(list));
-  return list->next == NULL ? list : list->next->previous;
+  VERIFY(!is_list_empty(list));
+  VERIFY(is_list_node(list->next->previous));
+  return list->next->previous;
 }
 
 void verify_linked_list_integrity() {
@@ -53,26 +57,27 @@ void verify_linked_list_integrity() {
       continue;
     }
 
-    node *start = lists[i]->next;
-    VERIFY(is_list_node(start));
-    node *current = start->next;
+    node *start = get_first_node(lists[i]);
+    node *current = start;
 
-    while (current != start) {
+    do {
       dbgln("Now checking thread %u, currently part of %s.", get_thread_id(current), get_list_name(lists[i]));
-      dbgln("%u <-> %u <-> %u (hoffentlich)", get_thread_id(current->previous), get_thread_id(current), get_thread_id(current->next));
+      dbgln("%u <-> %u <-> %u", get_thread_id(current->previous), get_thread_id(current), get_thread_id(current->next));
       VERIFY(is_list_node(current));
       VERIFY(current == current->previous->next);
       VERIFY(current == current->next->previous);
       VERIFY(!checked[get_thread_id(current)]);
       checked[get_thread_id(current)] = true;
       current = current->next;
-    }
+    } while (current != start);
   }
+
+  dbgln("List is in a valid state. Congratulations!");
 }
 
 void connect_nodes(node *from, node *to) {
-  VERIFY(from != NULL);
-  VERIFY(to != NULL);
+  VERIFY(is_list_node(from));
+  VERIFY(is_list_node(to));
   dbgln("Connecting node %u to node %u.", get_thread_id(from), get_thread_id(to));
 
   from->next = to;
