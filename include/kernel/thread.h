@@ -31,11 +31,10 @@ const char *get_list_name(node *head);
 size_t get_thread_id(node *n);
 
 void reset_thread_context(size_t index);
-void save_thread_context(tcb *thread, registers *regs, uint32_t cpsr);
+void save_thread_context(tcb *thread, registers *regs);
 void perform_stack_context_switch(registers *current_thread_regs, tcb *thread);
 void thread_list_initialise();
-void thread_create(void (*func)(void *), const void *args,
-                   unsigned int args_size);
+void thread_create(void (*func)(void *), const void *args, unsigned int args_size);
 void thread_cleanup();
 
 #endif

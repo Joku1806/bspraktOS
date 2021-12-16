@@ -1,7 +1,6 @@
 #define LOG_LEVEL DEBUG_LEVEL
 #define LOG_LABEL "Scheduler"
 
-#include <arch/cpu/psr.h>
 #include <kernel/scheduler.h>
 #include <kernel/thread.h>
 #include <lib/bounded_linked_list.h>
@@ -34,7 +33,7 @@ void schedule_thread(registers *thread_regs) {
       if (current_thread != get_idle_thread()) {
         dbgln("Thread %u is not done yet, saving context.", get_thread_id(current_thread));
         append_node_to_list(get_last_node(ready_head), current_thread);
-        save_thread_context((tcb *)current_thread, thread_regs, get_spsr());
+        save_thread_context((tcb *)current_thread, thread_regs);
       }
     }
 
