@@ -95,11 +95,10 @@ void remove_node_from_list(node *list, node *n) {
     if (n == n->previous && n == n->next) {
       dbgln("Node %u is also only node in list, clearing list head.", get_thread_id(n));
       list->next = NULL;
-      return;
+    } else {
+      dbgln("Pointing %s head to second node %u.", get_list_name(list), get_thread_id(n->next));
+      list->next = n->next;
     }
-
-    dbgln("Pointing %s head to second node %u.", get_list_name(list), get_thread_id(n->next));
-    list->next = n->next;
   }
 
   connect_nodes(n->previous, n->next);
