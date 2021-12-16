@@ -1,4 +1,4 @@
-#define LOG_LEVEL WARNING_LEVEL
+#define LOG_LEVEL DEBUG_LEVEL
 #define LOG_LABEL "String"
 
 #include <lib/assertions.h>
@@ -20,8 +20,13 @@ void *memcpy(void *dst, const void *src, size_t n) {
   char *dst_c = (char *)dst;
   char *src_c = (char *)src;
 
+
   for (size_t i = 0; i < n; i++) {
     dst_c[i] = src_c[i];
+
+    dbgln("dst an stelle %p = %p ",i,dst_c[i]);
+    dbgln("src an stelle %p = %p ",i,src_c[i]);
+
   }
 
   return dst;

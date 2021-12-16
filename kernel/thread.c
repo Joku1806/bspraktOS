@@ -87,7 +87,7 @@ void perform_stack_context_switch(registers *current_thread_regs, tcb *thread) {
   // generelle Register sowie lr(_irq) mit unserer Startfunktion
   // überschreiben, weil am Ende des Interrupthandlers pc auf lr(_irq) gesetzt
   // wird.
-  memcpy(current_thread_regs, (void *)&thread->regs, sizeof(thread->regs.general));
+  memcpy(&current_thread_regs->general, (void *)&thread->regs.general, sizeof(thread->regs.general));
   current_thread_regs->lr = thread->regs.pc;
 
   // Usermode in spsr schreiben, damit am Ende des Interrupthandlers durch
