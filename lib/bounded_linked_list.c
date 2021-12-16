@@ -117,6 +117,7 @@ void append_node_to_list(node *list, node *n) {
     if (list->next != NULL) {
       dbgln("%s is not empty, connecting node %u with first list node %u.", get_list_name(list), get_thread_id(n), get_thread_id(list->next));
       connect_nodes(n, list->next);
+      connect_nodes(get_last_node(list), n);
     }
 
     dbgln("Pointing %s head to node %u.", get_list_name(list), get_thread_id(n));
