@@ -34,6 +34,7 @@ node *get_last_node(node *list) {
 }
 
 void verify_linked_list_integrity() {
+  dbgln("Now checking list integrity.");
   node *ruh = get_thread_list_head(running);
   node *reh = get_thread_list_head(ready);
   node *wh = get_thread_list_head(waiting);
@@ -85,6 +86,7 @@ void remove_node_from_list(node *list, node *n) {
 
   if (list->next == n) {
     dbgln("Node %u is first node in list.", get_thread_id(n));
+    // FIXME: wird der erste Check überhaupt gebraucht?
     if (n == n->previous && n == n->next) {
       dbgln("Node %u is also only node in list, clearing list head.", get_thread_id(n));
       list->next = NULL;
@@ -97,6 +99,8 @@ void remove_node_from_list(node *list, node *n) {
 
   connect_nodes(n->previous, n->next);
   connect_nodes(n, n);
+
+  verify_linked_list_integrity();
 }
 
 // FIXME: list muss nicht unbedingt ein list head sein
@@ -118,4 +122,11 @@ void append_node_to_list(node *list, node *n) {
     connect_nodes(n, list->next);
     connect_nodes(list, n);
   }
+
+  verify_linked_list_integrity();
+}
+
+void transfer_list_node(node *from, node *to, node *n) {
+  remove_node_from_list(from, n);
+  append_node_to_list(to, n);
 }

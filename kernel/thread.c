@@ -102,12 +102,14 @@ void perform_stack_context_switch(registers *current_thread_regs, tcb *thread) {
 }
 
 void thread_create(void (*func)(void *), const void *args, unsigned int args_size) {
-  if (is_list_empty(get_thread_list_head(finished))) {
+  node *finished_head = get_thread_list_head(finished);
+  if (is_list_empty(finished_head)) {
     return;
   }
 
-  tcb *thread = (tcb *)get_first_node(get_thread_list_head(finished));
-  dbgln("Assigning new task to thread %u.", get_thread_id((node *)thread));
+  node *tnode = get_first_node(finished_head);
+  tcb *thread = (tcb *)tnode;
+  dbgln("Assigning new task to thread %u.", get_thread_id(tnode));
 
   thread->regs.sp = (char *)thread->regs.sp - args_size;
   if (args_size % 8 != 0) { // 8-byte align
@@ -118,18 +120,15 @@ void thread_create(void (*func)(void *), const void *args, unsigned int args_siz
   thread->regs.general[0] = (uint32_t)thread->regs.sp;
   thread->regs.pc = func;
 
-  remove_node_from_list(get_thread_list_head(finished), (node *)thread);
-  append_node_to_list(get_last_node(get_thread_list_head(ready)), (node *)thread);
-  verify_linked_list_integrity();
+  transfer_list_node(finished_head, get_thread_list_head(ready), tnode);
 }
 
 void thread_cleanup() {
+  node *running_head = get_thread_list_head(running);
+  node *finished_head = get_thread_list_head(finished);
   node *me = get_first_node(get_thread_list_head(running));
-  VERIFY(is_list_node(me));
 
   dbgln("Exiting from thread %u", get_thread_id(me));
-  reset_thread_context(((tcb *)me)->index);
-  remove_node_from_list(get_thread_list_head(running), me);
-  append_node_to_list(get_thread_list_head(finished), me);
-  verify_linked_list_integrity();
+  reset_thread_context(get_thread_id(me));
+  transfer_list_node(running_head, finished_head, me);
 }
