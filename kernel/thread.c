@@ -106,7 +106,7 @@ void perform_stack_context_switch(registers *current_thread_regs, tcb *thread) {
   // werden.
   asm volatile("msr spsr_cxsf, %0 \n\t"
                "msr sp_usr, %1 \n\t"
-               "msr lr_usr, %2 \n\t" ::"I"(psr_mode_user),
+               "msr lr_usr, %2 \n\t" ::"r"(thread->cpsr),
                "r"(thread->regs.sp), "r"(thread->regs.lr)
                : "memory");
 }
