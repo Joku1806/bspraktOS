@@ -44,7 +44,7 @@ void verify_linked_list_integrity() {
   VERIFY(wh != fh);
 
   node *lists[4] = {ruh, reh, wh, fh};
-  bool checked[USER_THREAD_COUNT] = {false};
+  bool checked[THREAD_COUNT] = {false};
 
   for (size_t i = 0; i < 4; i++) {
     if (is_list_empty(lists[i])) {

@@ -16,15 +16,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static tcb blocks[USER_THREAD_COUNT];
-static tcb idle_thread;
+static tcb blocks[THREAD_COUNT];
 
 node ready_head = {.previous = NULL, .next = NULL};
 node waiting_head = {.previous = NULL, .next = NULL};
 node running_head = {.previous = NULL, .next = NULL};
 node finished_head = {.previous = NULL, .next = (node *)blocks};
 
-node *get_idle_thread() { return (node *)&idle_thread; }
+node *get_idle_thread() { return (node *)&blocks[IDLE_THREAD_INDEX]; }
 
 node *get_thread_list_head(thread_status status) {
   switch (status) {
@@ -62,19 +61,7 @@ void reset_thread_context(size_t index) {
   blocks[index].cpsr = psr_mode_user;
   blocks[index].regs.sp = (void *)(THREAD_SP_BASE - index * STACK_SIZE);
   blocks[index].regs.lr = sys$exit;
-  blocks[index].regs.pc = NULL;
-}
-
-void idle_thread_initialize() {
-  node *idle_thread_node = (node *)&idle_thread;
-  idle_thread_node->previous = idle_thread_node;
-  idle_thread_node->next = idle_thread_node;
-
-  idle_thread.index = IDLE_THREAD_INDEX;
-  idle_thread.cpsr = psr_mode_user;
-  idle_thread.regs.sp = (void *)(THREAD_SP_BASE - IDLE_THREAD_INDEX * STACK_SIZE);
-  idle_thread.regs.lr = sys$exit;
-  idle_thread.regs.pc = halt_cpu;
+  blocks[index].regs.pc = index == IDLE_THREAD_INDEX ? halt_cpu : NULL;
 }
 
 void thread_list_initialise() {
@@ -85,7 +72,10 @@ void thread_list_initialise() {
     reset_thread_context(i);
   }
 
-  idle_thread_initialize();
+  node *idle_thread = get_idle_thread();
+  idle_thread->previous = idle_thread;
+  idle_thread->next = idle_thread;
+  reset_thread_context(IDLE_THREAD_INDEX);
 }
 
 void save_thread_context(tcb *thread, registers *regs, uint32_t cpsr) {

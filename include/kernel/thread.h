@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #define USER_THREAD_COUNT 4
+#define THREAD_COUNT USER_THREAD_COUNT + 1
 #define IDLE_THREAD_INDEX USER_THREAD_COUNT
 
 typedef enum {
