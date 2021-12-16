@@ -114,10 +114,7 @@ void perform_stack_context_switch(registers *current_thread_regs, tcb *thread) {
 void thread_create(void (*func)(void *), const void *args, unsigned int args_size) {
   node *ready_head = get_thread_list_head(ready);
   node *finished_head = get_thread_list_head(finished);
-
-  if (is_list_empty(finished_head)) {
-    return;
-  }
+  VERIFY(!is_list_empty(finished_head));
 
   node *tnode = get_first_node(finished_head);
   tcb *thread = (tcb *)tnode;

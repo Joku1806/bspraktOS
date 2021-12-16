@@ -8,6 +8,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+bool is_thread_available() {
+  return !is_list_empty(get_thread_list_head(finished));
+}
+
 void schedule_thread(registers *thread_regs) {
   node *ready_head = get_thread_list_head(ready);
   node *running_head = get_thread_list_head(running);

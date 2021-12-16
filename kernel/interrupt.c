@@ -136,6 +136,10 @@ void irq_interrupt_handler(registers *regs) {
     systimer_reset();
   } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
+    if (!is_thread_available()) {
+      return;
+    }
+
     char ch = pl001_read();
     dbgln("Got character %c", ch);
 
