@@ -81,15 +81,15 @@ void thread_list_initialise() {
 void save_thread_context(tcb *thread, registers *regs) {
   memcpy(&thread->regs.general, regs->general, sizeof(thread->regs.general));
 
-  // Thread $sp separat speichern, weil es am Anfang
+  // Thread $sp und $lr separat speichern, weil es am Anfang
   // der Interruptbehandlung überschrieben wurde und deswegen
   // nur im Usermodus verfügbar ist.
   asm volatile("mrs %0, sp_usr \n\t"
-               : "=r"(thread->regs.sp)::"memory");
+               "mrs %1, lr_usr \n\t"
+               : "=r"(thread->regs.sp), "=r"(thread->regs.lr)::"memory");
 
   // $pc muss mit $lr überschrieben werden, weil
   // der eigentliche $pc nach dem Interrupt dort steht.
-  // FIXME: Vielleicht doch falsches Register?
   thread->regs.pc = regs->lr;
 }
 
