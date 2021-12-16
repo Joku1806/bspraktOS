@@ -78,16 +78,26 @@ void thread_list_initialise() {
   reset_thread_context(IDLE_THREAD_INDEX);
 }
 
-void save_thread_context(tcb *thread, registers *regs, uint32_t cpsr) {
-  memcpy(&thread->regs, regs, sizeof(thread->regs));
-  thread->cpsr = cpsr;
+void save_thread_context(tcb *thread, registers *regs) {
+  memcpy(&thread->regs.general, regs->general, sizeof(thread->regs.general));
+
+  // Thread $sp separat speichern, weil es am Anfang
+  // der Interruptbehandlung überschrieben wurde und deswegen
+  // nur im Usermodus verfügbar ist.
+  asm volatile("mrs %0, sp_usr \n\t"
+               : "=r"(thread->regs.sp)::"memory");
+
+  // $pc muss mit $lr überschrieben werden, weil
+  // der eigentliche $pc nach dem Interrupt dort steht.
+  // FIXME: Vielleicht doch falsches Register?
+  thread->regs.pc = regs->lr;
 }
 
 void perform_stack_context_switch(registers *current_thread_regs, tcb *thread) {
   // generelle Register sowie lr(_irq) mit unserer Startfunktion
   // überschreiben, weil am Ende des Interrupthandlers pc auf lr(_irq) gesetzt
   // wird.
-  memcpy(&current_thread_regs->general, (void *)&thread->regs.general, sizeof(thread->regs.general));
+  memcpy(&current_thread_regs->general, (void *)thread->regs.general, sizeof(thread->regs.general));
   current_thread_regs->lr = thread->regs.pc;
 
   // Usermode in spsr schreiben, damit am Ende des Interrupthandlers durch
