@@ -1,4 +1,4 @@
-#define LOG_LEVEL DEBUG_LEVEL
+#define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "Kernel Start"
 
 #include <arch/bsp/pl001.h>

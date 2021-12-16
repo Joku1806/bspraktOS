@@ -1,4 +1,4 @@
-#define LOG_LEVEL DEBUG_LEVEL
+#define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "Interrupt"
 
 #include <arch/bsp/interrupt_peripherals.h>
