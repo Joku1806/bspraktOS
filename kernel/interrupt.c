@@ -19,18 +19,18 @@
 #include <stdint.h>
 #include <user/main.h>
 
-int dispatch_syscall(uint32_t *regs, uint32_t syscall_no);
+int dispatch_syscall(registers *regs, uint32_t syscall_no);
 void print_register_using_layout(uint32_t reg, register_layout_part *layout);
 void print_current_mode_status_registers(register_layout_part *layout);
-void print_general_registers(uint32_t *regs);
+void print_general_registers(registers *regs);
 void print_various_mode_registers(register_layout_part *layout);
-void dump_registers(uint32_t *regs);
+void dump_registers(registers *regs);
 
-void reset_interrupt_handler(uint32_t *regs) {
+void reset_interrupt_handler(registers *regs) {
   kprintf("#############################################"
           "#######################"
           "#######\n");
-  kprintf("Reset Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
+  kprintf("Reset Interrupt an Adresse %#010x\n", regs->lr);
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) == psr_mode_user) {
@@ -40,11 +40,11 @@ void reset_interrupt_handler(uint32_t *regs) {
   }
 }
 
-void undefined_instruction_interrupt_handler(uint32_t *regs) {
+void undefined_instruction_interrupt_handler(registers *regs) {
   kprintf("#############################################"
           "#######################"
           "#######\n");
-  kprintf("Undefined Instruction an Adresse %#010x\n", regs[LR_POSITION]);
+  kprintf("Undefined Instruction an Adresse %#010x\n", regs->lr);
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) == psr_mode_user) {
@@ -54,7 +54,7 @@ void undefined_instruction_interrupt_handler(uint32_t *regs) {
   }
 }
 
-int dispatch_syscall(uint32_t *regs, uint32_t syscall_no) {
+int dispatch_syscall(registers *regs, uint32_t syscall_no) {
   switch (syscall_no) {
     case SYSCALL_EXIT_NO:
       thread_cleanup();
@@ -66,9 +66,9 @@ int dispatch_syscall(uint32_t *regs, uint32_t syscall_no) {
   return -EINVAL;
 }
 
-void software_interrupt_handler(uint32_t *regs) {
+void software_interrupt_handler(registers *regs) {
   // -4 um lr zu korrigieren
-  uint32_t svc_address = regs[LR_POSITION] - 4;
+  void *svc_address = (char *)(regs->lr) - 4;
   if (is_syscall(svc_address) &&
       dispatch_syscall(regs, get_syscall_no(svc_address)) >= 0) {
     return;
@@ -77,7 +77,7 @@ void software_interrupt_handler(uint32_t *regs) {
   kprintf("#############################################"
           "#######################"
           "#######\n");
-  kprintf("Software Interrupt an Adresse %#010x\n", regs[LR_POSITION]);
+  kprintf("Software Interrupt an Adresse %#010x\n", regs->lr);
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) == psr_mode_user) {
@@ -87,7 +87,7 @@ void software_interrupt_handler(uint32_t *regs) {
   }
 }
 
-void prefetch_abort_interrupt_handler(uint32_t *regs) {
+void prefetch_abort_interrupt_handler(registers *regs) {
   uint32_t ifsr = 0, ifar = 0;
   asm volatile("mrc p15, 0, %0, c5, c0, 1 \n\t"
                "mrc p15, 0, %1, c6, c0, 2 \n\t"
@@ -95,7 +95,7 @@ void prefetch_abort_interrupt_handler(uint32_t *regs) {
   kprintf("#############################################"
           "#######################"
           "#######\n");
-  kprintf("Prefetch Abort an Adresse %#010x\n", regs[LR_POSITION]);
+  kprintf("Prefetch Abort an Adresse %#010x\n", regs->lr);
   kprintf("Zugriff: Ausführung von Instruktion an Adresse %#010x\n", ifar);
   kprintf("Fehler: %s\n", get_prefetch_abort_error_type(ifsr));
 
@@ -108,7 +108,7 @@ void prefetch_abort_interrupt_handler(uint32_t *regs) {
   }
 }
 
-void data_abort_interrupt_handler(uint32_t *regs) {
+void data_abort_interrupt_handler(registers *regs) {
   uint32_t dfsr = 0, dfar = 0;
   asm volatile("mrc p15, 0, %0, c5, c0, 0 \n\t"
                "mrc p15, 0, %1, c6, c0, 0 \n\t"
@@ -116,7 +116,7 @@ void data_abort_interrupt_handler(uint32_t *regs) {
   kprintf("#############################################"
           "#######################"
           "#######\n");
-  kprintf("Data Abort an Adresse %#010x\n", regs[LR_POSITION]);
+  kprintf("Data Abort an Adresse %#010x\n", regs->lr);
   kprintf("Zugriff: %s auf Adresse %#010x\n", "lesend", dfar);
   kprintf("Fehler: %s\n", get_data_abort_error_type(dfsr));
 
@@ -129,7 +129,7 @@ void data_abort_interrupt_handler(uint32_t *regs) {
   }
 }
 
-void irq_interrupt_handler(uint32_t *regs) {
+void irq_interrupt_handler(registers *regs) {
   if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
     kprintf("!");
     schedule_thread(regs);
@@ -158,17 +158,19 @@ void irq_interrupt_handler(uint32_t *regs) {
   }
 }
 
-void print_general_registers(uint32_t *regs) {
+void print_general_registers(registers *regs) {
   kprintf("\n>>> Registerschnappschuss (aktueller Modus) <<<\n");
   static const char *aliases[3] = {"SP", "LR", "PC"};
+  uint32_t *regs_iter = (uint32_t *)regs;
+
   for (size_t reg_idx = 0; reg_idx < 8; reg_idx++) {
-    kprintf("R%u: %#010x\t", reg_idx, regs[reg_idx]);
+    kprintf("R%u: %#010x\t", reg_idx, regs_iter[reg_idx]);
 
     if (reg_idx + 8 >= SP_POSITION && reg_idx + 8 <= PC_POSITION) {
       kprintf("%s: %#010x\n", aliases[reg_idx + 8 - SP_POSITION],
-              regs[reg_idx + 8]);
+              regs_iter[reg_idx + 8]);
     } else if (reg_idx + 8 != 16) {
-      kprintf("R%u: %#010x\n", reg_idx + 8, regs[reg_idx + 8]);
+      kprintf("R%u: %#010x\n", reg_idx + 8, regs_iter[reg_idx + 8]);
     }
   }
 }
@@ -248,7 +250,7 @@ void print_various_mode_registers(register_layout_part *layout) {
   kprintf("\n");
 }
 
-void dump_registers(uint32_t *regs) {
+void dump_registers(registers *regs) {
   print_general_registers(regs);
 
   register_layout_part layout[5] = {

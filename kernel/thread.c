@@ -43,9 +43,9 @@ node *get_thread_list_head(thread_status status) {
 void reset_thread_context(size_t index) {
   blocks[index].index = index;
   blocks[index].cpsr = psr_mode_user;
-  blocks[index].regs[SP_POSITION] = THREAD_SP_BASE - index * STACK_SIZE;
-  blocks[index].regs[LR_POSITION] = (uint32_t)sys$exit;
-  blocks[index].regs[PC_POSITION] = (uint32_t)NULL;
+  blocks[index].regs.sp = (void *)(THREAD_SP_BASE - index * STACK_SIZE);
+  blocks[index].regs.lr = sys$exit;
+  blocks[index].regs.pc = NULL;
 }
 
 void idle_thread_initialize() {
@@ -55,10 +55,9 @@ void idle_thread_initialize() {
 
   idle_thread.index = IDLE_THREAD_INDEX;
   idle_thread.cpsr = psr_mode_user;
-  idle_thread.regs[SP_POSITION] =
-      THREAD_SP_BASE - IDLE_THREAD_INDEX * STACK_SIZE;
-  idle_thread.regs[LR_POSITION] = (uint32_t)sys$exit;
-  idle_thread.regs[PC_POSITION] = (uint32_t)halt_cpu;
+  idle_thread.regs.sp = (void *)(THREAD_SP_BASE - IDLE_THREAD_INDEX * STACK_SIZE);
+  idle_thread.regs.lr = sys$exit;
+  idle_thread.regs.pc = halt_cpu;
 }
 
 void thread_list_initialise() {
@@ -72,20 +71,17 @@ void thread_list_initialise() {
   idle_thread_initialize();
 }
 
-void save_thread_context(tcb *thread, uint32_t *regs, uint32_t cpsr) {
-  for (size_t index = 0; index < 16; index++) {
-    thread->regs[index] = regs[index];
-  }
-
+void save_thread_context(tcb *thread, registers *regs, uint32_t cpsr) {
+  memcpy(&thread->regs, regs, sizeof(thread->regs));
   thread->cpsr = cpsr;
 }
 
-void perform_stack_context_switch(uint32_t *current_thread_regs, tcb *thread) {
+void perform_stack_context_switch(registers *current_thread_regs, tcb *thread) {
   // generelle Register sowie lr(_irq) mit unserer Startfunktion
   // überschreiben, weil am Ende des Interrupthandlers pc auf lr(_irq) gesetzt
   // wird.
-  memcpy(current_thread_regs, thread->regs, 13 * 4);
-  current_thread_regs[LR_POSITION] = thread->regs[PC_POSITION];
+  memcpy(current_thread_regs, (void *)&thread->regs, sizeof(thread->regs.general));
+  current_thread_regs->lr = thread->regs.pc;
 
   // Usermode in spsr schreiben, damit am Ende des Interrupthandlers durch
   // movs in den Usermodus gewechselt wird. Da sp und lr gebankt sind und wir
@@ -94,7 +90,7 @@ void perform_stack_context_switch(uint32_t *current_thread_regs, tcb *thread) {
   asm volatile("msr spsr_cxsf, %0 \n\t"
                "msr sp_usr, %1 \n\t"
                "msr lr_usr, %2 \n\t" ::"I"(psr_mode_user),
-               "r"(thread->regs[SP_POSITION]), "r"(thread->regs[LR_POSITION])
+               "r"(thread->regs.sp), "r"(thread->regs.lr)
                : "memory");
 }
 
@@ -106,14 +102,14 @@ void thread_create(void (*func)(void *), const void *args,
 
   tcb *thread = (tcb *)get_first_node(get_thread_list_head(finished));
 
-  thread->regs[SP_POSITION] -= args_size;
+  thread->regs.sp = (char *)thread->regs.sp - args_size;
   if (args_size % 8 != 0) { // 8-byte align
-    thread->regs[SP_POSITION] -= 8 - args_size % 8;
+    thread->regs.sp = (char *)thread->regs.sp - (8 - args_size % 8);
   }
 
-  memcpy((void *)thread->regs[SP_POSITION], args, args_size);
-  thread->regs[0] = thread->regs[SP_POSITION];
-  thread->regs[PC_POSITION] = (uint32_t)func;
+  memcpy(thread->regs.sp, args, args_size);
+  thread->regs.general[0] = (uint32_t)thread->regs.sp;
+  thread->regs.pc = func;
 
   remove_node_from_list(get_thread_list_head(finished), (node *)thread);
   append_node_to_list(get_last_node(get_thread_list_head(ready)),

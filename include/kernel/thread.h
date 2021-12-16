@@ -1,6 +1,7 @@
 #ifndef THREAD_H
 #define THREAD_H
 
+#include <arch/cpu/registers.h>
 #include <lib/bounded_linked_list.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -17,7 +18,7 @@ typedef enum {
 
 typedef struct {
   node node;
-  uint32_t regs[16];
+  registers regs;
   uint32_t cpsr;
   size_t index;
 } tcb;
@@ -26,8 +27,8 @@ tcb *get_idle_thread();
 node *get_thread_list_head(thread_status status);
 
 void reset_thread_context(size_t index);
-void save_thread_context(tcb *thread, uint32_t *regs, uint32_t cpsr);
-void perform_stack_context_switch(uint32_t *current_thread_regs, tcb *thread);
+void save_thread_context(tcb *thread, registers *regs, uint32_t cpsr);
+void perform_stack_context_switch(registers *current_thread_regs, tcb *thread);
 void thread_list_initialise();
 void thread_create(void (*func)(void *), const void *args,
                    unsigned int args_size);

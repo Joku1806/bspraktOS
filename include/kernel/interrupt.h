@@ -25,11 +25,11 @@ typedef struct {
   size_t last_member_bit_offset;
 } register_layout_part;
 
-void reset_interrupt_handler(uint32_t *regs);
-void undefined_instruction_interrupt_handler(uint32_t *regs);
-void software_interrupt_handler(uint32_t *regs);
-void prefetch_abort_interrupt_handler(uint32_t *regs);
-void data_abort_interrupt_handler(uint32_t *regs);
-void irq_interrupt_handler(uint32_t *regs);
+void reset_interrupt_handler(registers *regs);
+void undefined_instruction_interrupt_handler(registers *regs);
+void software_interrupt_handler(registers *regs);
+void prefetch_abort_interrupt_handler(registers *regs);
+void data_abort_interrupt_handler(registers *regs);
+void irq_interrupt_handler(registers *regs);
 
 #endif

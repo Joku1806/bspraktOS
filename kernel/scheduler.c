@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-void schedule_thread(uint32_t *thread_regs) {
+void schedule_thread(registers *thread_regs) {
   node *running_list = get_thread_list_head(running);
   node *ready_list = get_thread_list_head(ready);
   node *next_thread = NULL;
