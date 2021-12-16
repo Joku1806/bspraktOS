@@ -114,19 +114,20 @@ void append_node_to_list(node *list, node *n) {
   VERIFY(list != n);
 
   if (is_list_head(list)) {
-    if (list->next != NULL) {
-      dbgln("%s is not empty, connecting node %u with first list node %u.", get_list_name(list), get_thread_id(n), get_thread_id(list->next));
-      connect_nodes(n, list->next);
-      connect_nodes(get_last_node(list), n);
+    if (list->next == NULL) {
+      list->next = n;
+      return;
     }
 
-    dbgln("Pointing %s head to node %u.", get_list_name(list), get_thread_id(n));
-    list->next = n;
-  } else {
-    dbgln("Inserting node %u between node %u and node %u.", get_thread_id(n), get_thread_id(list), get_thread_id(list->next));
-    connect_nodes(n, list->next);
-    connect_nodes(list, n);
+    // am Ende der Liste anhängen ist das gleiche wie als erstes Element in die Liste einfügen
+    node *head = list;
+    list = get_last_node(list);
+    dbgln("Pointing %s head to node %u.", get_list_name(head), get_thread_id(n));
+    head->next = n;
   }
+
+  connect_nodes(n, list->next);
+  connect_nodes(list, n);
 
   verify_linked_list_integrity();
 }
