@@ -102,7 +102,9 @@ void perform_stack_context_switch(registers *current_thread_regs, tcb *thread) {
 }
 
 void thread_create(void (*func)(void *), const void *args, unsigned int args_size) {
+  node *ready_head = get_thread_list_head(ready);
   node *finished_head = get_thread_list_head(finished);
+
   if (is_list_empty(finished_head)) {
     return;
   }
@@ -120,7 +122,11 @@ void thread_create(void (*func)(void *), const void *args, unsigned int args_siz
   thread->regs.general[0] = (uint32_t)thread->regs.sp;
   thread->regs.pc = func;
 
-  transfer_list_node(finished_head, get_thread_list_head(ready), tnode);
+  if (is_list_empty(ready_head)) {
+    transfer_list_node(finished_head, ready_head, tnode);
+  } else {
+    transfer_list_node(finished_head, get_last_node(ready_head), tnode);
+  }
 }
 
 void thread_cleanup() {
