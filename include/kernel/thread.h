@@ -23,8 +23,11 @@ typedef struct {
   size_t index;
 } tcb;
 
-tcb *get_idle_thread();
+node *get_idle_thread();
 node *get_thread_list_head(thread_status status);
+
+const char *get_list_name(node *head);
+size_t get_thread_id(node *n);
 
 void reset_thread_context(size_t index);
 void save_thread_context(tcb *thread, registers *regs, uint32_t cpsr);

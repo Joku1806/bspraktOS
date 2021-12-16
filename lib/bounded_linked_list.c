@@ -1,6 +1,8 @@
-#define LOG_LEVEL WARNING_LEVEL
+
+#define LOG_LEVEL DEBUG_LEVEL
 #define LOG_LABEL "Bounded Linked List"
 
+#include <kernel/thread.h>
 #include <lib/assertions.h>
 #include <lib/bounded_linked_list.h>
 #include <lib/debug.h>
@@ -31,9 +33,46 @@ node *get_last_node(node *list) {
   return list->next == NULL ? list : list->next->previous;
 }
 
+void verify_linked_list_integrity() {
+  node *ruh = get_thread_list_head(running);
+  node *reh = get_thread_list_head(ready);
+  node *wh = get_thread_list_head(waiting);
+  node *fh = get_thread_list_head(finished);
+
+  VERIFY(ruh != reh && ruh != wh && ruh != fh);
+  VERIFY(reh != wh && reh != fh);
+  VERIFY(wh != fh);
+
+  node *lists[4] = {ruh, reh, wh, fh};
+  bool checked[USER_THREAD_COUNT] = {false};
+
+  for (size_t i = 0; i < 4; i++) {
+    if (is_list_empty(lists[i])) {
+      dbgln("%s is empty, continuing...", get_list_name(lists[i]));
+      continue;
+    }
+
+    node *start = lists[i]->next;
+    VERIFY(is_list_node(start));
+    node *current = start->next;
+
+    while (current != start) {
+      dbgln("Now checking thread %u, currently part of %s.", get_thread_id(current), get_list_name(lists[i]));
+      dbgln("%u <-> %u <-> %u (hoffentlich)", get_thread_id(current->previous), get_thread_id(current), get_thread_id(current->next));
+      VERIFY(is_list_node(current));
+      VERIFY(current == current->previous->next);
+      VERIFY(current == current->next->previous);
+      VERIFY(!checked[get_thread_id(current)]);
+      checked[get_thread_id(current)] = true;
+      current = current->next;
+    }
+  }
+}
+
 void connect_nodes(node *from, node *to) {
   VERIFY(from != NULL);
   VERIFY(to != NULL);
+  dbgln("Connecting node %u to node %u.", get_thread_id(from), get_thread_id(to));
 
   from->next = to;
   to->previous = from;
@@ -42,14 +81,17 @@ void connect_nodes(node *from, node *to) {
 void remove_node_from_list(node *list, node *n) {
   VERIFY(is_list_head(list));
   VERIFY(is_list_node(n));
+  dbgln("Removing node %u from %s.", get_thread_id(n), get_list_name(list));
 
   if (list->next == n) {
+    dbgln("Node %u is first node in list.", get_thread_id(n));
     if (n == n->previous && n == n->next) {
-      dbgln("n = %p is first and only node in list.", n);
+      dbgln("Node %u is also only node in list, clearing list head.", get_thread_id(n));
       list->next = NULL;
       return;
     }
 
+    dbgln("Pointing %s head to second node %u.", get_list_name(list), get_thread_id(n->next));
     list->next = n->next;
   }
 
@@ -65,11 +107,14 @@ void append_node_to_list(node *list, node *n) {
 
   if (is_list_head(list)) {
     if (list->next != NULL) {
+      dbgln("%s is not empty, connecting node %u with first list node %u.", get_list_name(list), get_thread_id(n), get_thread_id(list->next));
       connect_nodes(n, list->next);
     }
 
+    dbgln("Pointing %s head to node %u.", get_list_name(list), get_thread_id(n));
     list->next = n;
   } else {
+    dbgln("Inserting node %u between node %u and node %u.", get_thread_id(n), get_thread_id(list), get_thread_id(list->next));
     connect_nodes(n, list->next);
     connect_nodes(list, n);
   }

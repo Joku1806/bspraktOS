@@ -1,4 +1,4 @@
-#define LOG_LEVEL WARNING_LEVEL
+#define LOG_LEVEL DEBUG_LEVEL
 #define LOG_LABEL "Thread"
 
 #include <arch/bsp/stack_defines.h>
@@ -10,6 +10,7 @@
 #include <kernel/thread.h>
 #include <lib/assertions.h>
 #include <lib/bounded_linked_list.h>
+#include <lib/debug.h>
 #include <lib/modmath.h>
 #include <lib/string.h>
 #include <stddef.h>
@@ -23,7 +24,7 @@ node waiting_head = {.previous = NULL, .next = NULL};
 node running_head = {.previous = NULL, .next = NULL};
 node finished_head = {.previous = NULL, .next = (node *)blocks};
 
-tcb *get_idle_thread() { return &idle_thread; }
+node *get_idle_thread() { return (node *)&idle_thread; }
 
 node *get_thread_list_head(thread_status status) {
   switch (status) {
@@ -39,6 +40,22 @@ node *get_thread_list_head(thread_status status) {
 
   VERIFY_NOT_REACHED();
 }
+
+const char *get_list_name(node *head) {
+  if (head == &ready_head) {
+    return "Ready List";
+  } else if (head == &waiting_head) {
+    return "Waiting List";
+  } else if (head == &running_head) {
+    return "Running List";
+  } else if (head == &finished_head) {
+    return "Finished List";
+  }
+
+  VERIFY_NOT_REACHED();
+}
+
+size_t get_thread_id(node *n) { return ((tcb *)n)->index; }
 
 void reset_thread_context(size_t index) {
   blocks[index].index = index;
@@ -94,13 +111,13 @@ void perform_stack_context_switch(registers *current_thread_regs, tcb *thread) {
                : "memory");
 }
 
-void thread_create(void (*func)(void *), const void *args,
-                   unsigned int args_size) {
+void thread_create(void (*func)(void *), const void *args, unsigned int args_size) {
   if (is_list_empty(get_thread_list_head(finished))) {
     return;
   }
 
   tcb *thread = (tcb *)get_first_node(get_thread_list_head(finished));
+  dbgln("Assigning new task to thread %u.", get_thread_id((node *)thread));
 
   thread->regs.sp = (char *)thread->regs.sp - args_size;
   if (args_size % 8 != 0) { // 8-byte align
@@ -112,15 +129,17 @@ void thread_create(void (*func)(void *), const void *args,
   thread->regs.pc = func;
 
   remove_node_from_list(get_thread_list_head(finished), (node *)thread);
-  append_node_to_list(get_last_node(get_thread_list_head(ready)),
-                      (node *)thread);
+  append_node_to_list(get_last_node(get_thread_list_head(ready)), (node *)thread);
+  verify_linked_list_integrity();
 }
 
 void thread_cleanup() {
   node *me = get_first_node(get_thread_list_head(running));
   VERIFY(is_list_node(me));
 
+  dbgln("Exiting from thread %u", get_thread_id(me));
   reset_thread_context(((tcb *)me)->index);
   remove_node_from_list(get_thread_list_head(running), me);
   append_node_to_list(get_thread_list_head(finished), me);
+  verify_linked_list_integrity();
 }
