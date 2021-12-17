@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <user/main.h>
 
+void populate_thread_pool();
 int dispatch_syscall(registers *regs, uint32_t syscall_no);
 void print_register_using_layout(uint32_t reg, register_layout_part *layout);
 void print_current_mode_status_registers(register_layout_part *layout);
@@ -58,6 +59,7 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
   switch (syscall_no) {
     case SYSCALL_EXIT_NO:
       thread_cleanup();
+      populate_thread_pool();
       schedule_thread(regs);
       systimer_reset();
       return 0;
@@ -129,17 +131,8 @@ void data_abort_interrupt_handler(registers *regs) {
   }
 }
 
-void irq_interrupt_handler(registers *regs) {
-  if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
-    kprintf("!");
-    schedule_thread(regs);
-    systimer_reset();
-  } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
-    pl001_receive();
-    if (!is_thread_available()) {
-      return;
-    }
-
+void populate_thread_pool() {
+  while (is_thread_available() && pl001_has_unread_character()) {
     char ch = pl001_read();
     dbgln("Got character %c", ch);
 
@@ -159,6 +152,17 @@ void irq_interrupt_handler(registers *regs) {
       default:
         thread_create(main, &ch, 1);
     }
+  }
+}
+
+void irq_interrupt_handler(registers *regs) {
+  if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
+    kprintf("!");
+    schedule_thread(regs);
+    systimer_reset();
+  } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
+    pl001_receive();
+    populate_thread_pool();
   }
 }
 
