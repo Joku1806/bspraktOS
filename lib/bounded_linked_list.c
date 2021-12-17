@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "Bounded Linked List"
 
@@ -48,7 +49,10 @@ void verify_linked_list_integrity() {
   VERIFY(wh != fh);
 
   node *lists[4] = {ruh, reh, wh, fh};
-  bool checked[THREAD_COUNT] = {false};
+  bool checked[THREAD_COUNT];
+  for (size_t i = 0; i < THREAD_COUNT; i++) {
+    checked[i] = false;
+  }
 
   for (size_t i = 0; i < 4; i++) {
     if (is_list_empty(lists[i])) {
