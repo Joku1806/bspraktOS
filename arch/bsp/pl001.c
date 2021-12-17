@@ -2,8 +2,6 @@
 #include <config.h>
 #include <lib/ringbuffer.h>
 
-// TODO: Stacks in kernel.lds platzieren, damit das niemals ausversehen
-// überschrieben werden kann!
 char pl001_buffer_contents_internal[UART_INPUT_BUFFER_SIZE];
 ringbuffer pl001_buffer_internal;
 
