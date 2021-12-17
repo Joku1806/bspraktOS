@@ -19,7 +19,7 @@ void pl001_receive() {
   ringbuffer_write(&pl001_buffer_internal, *pl001_register(DR));
 }
 
-bool pl001_new_character_arrived() {
+bool pl001_has_unread_character() {
   return ringbuffer_write_occured(&pl001_buffer_internal);
 }
 
