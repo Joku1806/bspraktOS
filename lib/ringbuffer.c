@@ -1,3 +1,5 @@
+// Inspiriert von https://github.com/torvalds/linux/blob/master/lib/kfifo.c
+
 #define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "Ringbuffer"
 
@@ -6,53 +8,77 @@
 #include <lib/math.h>
 #include <lib/ringbuffer.h>
 #include <stddef.h>
+#include <string.h>
 
-ringbuffer ringbuffer_create(char *contents, size_t length) {
-  VERIFY(length != 0);
+size_t ringbuffer_used(ringbuffer *r);
+size_t ringbuffer_unused(ringbuffer *r);
+void ringbuffer_read_with_offset(ringbuffer *r, void *dst, size_t length, size_t offset);
+void ringbuffer_write_with_offset(ringbuffer *r, const void *src, size_t length, size_t offset);
 
-  ringbuffer new = {
-      .contents = contents,
-      .length = length,
-      .read_index = 0,
-      .write_index = 0,
-      .ignore_writes = false,
-      .valid_reads = false,
-  };
-
-  return new;
+size_t ringbuffer_used(ringbuffer *r) {
+  return r->write_index - r->read_index;
 }
 
-bool ringbuffer_write_occured(ringbuffer *r) {
-  return MODULO_ADD(r->read_index, 1, r->length) != r->write_index;
+size_t ringbuffer_unused(ringbuffer *r) {
+  return (r->mask + 1) - (r->write_index - r->read_index);
 }
 
-char ringbuffer_read(ringbuffer *r) {
-  VERIFY(r->read_index < r->length);
-  r->ignore_writes = false;
-  while (!r->valid_reads) {}
+void ringbuffer_read_with_offset(ringbuffer *r, void *dst, size_t length, size_t offset) {
+  size_t size = r->mask + 1;
+  offset &= r->mask;
+  size_t rest_length = MIN(length, size - offset);
 
-  if (MODULO_ADD(r->read_index, 1, r->length) != r->write_index) {
-    r->read_index = MODULO_ADD(r->read_index, 1, r->length);
-  }
-
-  return r->contents[r->read_index];
+  memcpy(dst, r->data + offset, rest_length);
+  memcpy(dst + rest_length, r->data, length - rest_length);
 }
 
-void ringbuffer_write(ringbuffer *r, char ch) {
-  VERIFY(r->write_index < r->length);
-  r->valid_reads = true;
+void ringbuffer_write_with_offset(ringbuffer *r, const void *src, size_t length, size_t offset) {
+  size_t size = r->mask + 1;
+  offset &= r->mask;
+  size_t rest_length = MIN(length, size - offset);
 
-  if (r->ignore_writes) {
-    return;
+  memcpy(r->data + offset, src, rest_length);
+  memcpy(r->data, src + rest_length, length - rest_length);
+}
+
+void ringbuffer_initialise(ringbuffer *r, void *data, size_t length) {
+  VERIFY(data != NULL);
+  VERIFY(length >= 2 && IS_POWER_OF_TWO(length));
+
+  r->data = data;
+  r->mask = length - 1;
+  r->read_index = 0;
+  r->write_index = 0;
+}
+
+bool ringbuffer_empty(ringbuffer *r) {
+  return ringbuffer_used(r) == 0;
+}
+
+bool ringbuffer_full(ringbuffer *r) {
+  return ringbuffer_unused(r) == 0;
+}
+
+size_t ringbuffer_read(ringbuffer *r, void *dst, size_t length) {
+  size_t cap = ringbuffer_used(r);
+
+  if (length > cap) {
+    length = cap;
   }
 
-  if (MODULO_ADD(r->write_index, 1, r->length) == r->read_index) {
-    dbgln("Write index will hit read index %u in next call, now blocking until "
-          "read is called again.",
-          r->read_index);
-    r->ignore_writes = true;
+  ringbuffer_read_with_offset(r, dst, length, r->read_index);
+  r->read_index += length;
+  return length;
+}
+
+size_t ringbuffer_write(ringbuffer *r, const void *src, size_t length) {
+  size_t cap = ringbuffer_unused(r);
+
+  if (length > cap) {
+    length = cap;
   }
 
-  r->contents[r->write_index] = ch;
-  r->write_index = MODULO_ADD(r->write_index, 1, r->length);
+  ringbuffer_write_with_offset(r, src, length, r->write_index);
+  r->write_index += length;
+  return length;
 }

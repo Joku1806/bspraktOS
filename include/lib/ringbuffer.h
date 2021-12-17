@@ -5,18 +5,18 @@
 #include <stddef.h>
 
 typedef struct {
-  char *contents;
-  size_t length;
+  void *data;
+  size_t mask;
   size_t read_index;
   size_t write_index;
-  bool ignore_writes;
-  volatile bool valid_reads;
 } ringbuffer;
 
-ringbuffer ringbuffer_create(char *contents, size_t length);
+void ringbuffer_initialise(ringbuffer *r, void *data, size_t length);
 
-bool ringbuffer_write_occured(ringbuffer *r);
-void ringbuffer_write(ringbuffer *r, char ch);
-char ringbuffer_read(ringbuffer *r);
+bool ringbuffer_empty(ringbuffer *r);
+bool ringbuffer_full(ringbuffer *r);
+
+size_t ringbuffer_read(ringbuffer *r, void *dst, size_t length);
+size_t ringbuffer_write(ringbuffer *r, const void *src, size_t length);
 
 #endif
