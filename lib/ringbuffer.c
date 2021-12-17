@@ -3,7 +3,7 @@
 
 #include <lib/assertions.h>
 #include <lib/debug.h>
-#include <lib/modmath.h>
+#include <lib/math.h>
 #include <lib/ringbuffer.h>
 #include <stddef.h>
 

@@ -11,7 +11,7 @@
 #include <lib/assertions.h>
 #include <lib/bounded_linked_list.h>
 #include <lib/debug.h>
-#include <lib/modmath.h>
+#include <lib/math.h>
 #include <lib/string.h>
 #include <stddef.h>
 #include <stdint.h>
