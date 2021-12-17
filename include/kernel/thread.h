@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define USER_THREAD_COUNT 4
+#define USER_THREAD_COUNT 32
 #define THREAD_COUNT USER_THREAD_COUNT + 1
 #define IDLE_THREAD_INDEX USER_THREAD_COUNT
 
