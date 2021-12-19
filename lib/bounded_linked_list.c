@@ -1,11 +1,13 @@
-#include <stdbool.h>
-#define LOG_LEVEL WARNING_LEVEL
+#define LOG_LEVEL DEBUG_LEVEL
 #define LOG_LABEL "Bounded Linked List"
+
+#define VERIFY_INTEGRITY_AFTER_OP false
 
 #include <kernel/thread.h>
 #include <lib/assertions.h>
 #include <lib/bounded_linked_list.h>
 #include <lib/debug.h>
+#include <stdbool.h>
 #include <stddef.h>
 
 bool is_list_head(node *n) {
@@ -107,7 +109,9 @@ void remove_node_from_list(node *list, node *n) {
   connect_nodes(n->previous, n->next);
   connect_nodes(n, n);
 
-  verify_linked_list_integrity();
+  if (VERIFY_INTEGRITY_AFTER_OP) {
+    verify_linked_list_integrity();
+  }
 }
 
 // FIXME: list muss nicht unbedingt ein list head sein
@@ -132,7 +136,9 @@ void append_node_to_list(node *list, node *n) {
   connect_nodes(n, list->next);
   connect_nodes(list, n);
 
-  verify_linked_list_integrity();
+  if (VERIFY_INTEGRITY_AFTER_OP) {
+    verify_linked_list_integrity();
+  }
 }
 
 void transfer_list_node(node *from, node *to, node *n) {
