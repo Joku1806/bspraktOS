@@ -1,4 +1,9 @@
+#define LOG_LEVEL WARNING_LEVEL
+#define LOG_LABEL "Fraction"
+#define LOG_COLORED_OUTPUT false
+
 #include <lib/assertions.h>
+#include <lib/debug.h>
 #include <lib/fraction.h>
 #include <lib/math.h>
 
