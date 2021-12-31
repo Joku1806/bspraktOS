@@ -9,7 +9,7 @@
 
 #define IS_POWER_OF_TWO(x) (((x) & ((x)-1)) == 0)
 
-unsigned long gcd(unsigned long a, unsigned long b);
-unsigned long lcm(unsigned long a, unsigned long b);
+long gcd(long a, long b);
+long lcm(long a, long b);
 
 #endif

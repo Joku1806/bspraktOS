@@ -1,7 +1,10 @@
 #include <lib/math.h>
 #include <stddef.h>
 
-unsigned long gcd(unsigned long a, unsigned long b) {
+long gcd(long a, long b) {
+  a = ABS(a);
+  b = ABS(b);
+
   while (b) {
     long tmp = a;
     a = b;
@@ -11,6 +14,6 @@ unsigned long gcd(unsigned long a, unsigned long b) {
   return a;
 }
 
-unsigned long lcm(unsigned long a, unsigned long b) {
+long lcm(long a, long b) {
   return ABS(a) / gcd(a, b) * ABS(b);
 }
