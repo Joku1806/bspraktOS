@@ -24,4 +24,6 @@ fraction fraction_round(fraction *a);
 
 fraction fraction_project_onto_range(fraction *a, fraction *min, fraction *max);
 
+long project_long_onto_range(long a, long min, long max);
+
 #endif

@@ -178,3 +178,12 @@ fraction fraction_project_onto_range(fraction *a, fraction *min, fraction *max) 
   dbgln("Projecting %i/%i onto [%i/%i, %i/%i] -> %i/%i", a->numerator, a->denominator, min->numerator, min->denominator, max->numerator, max->denominator, ret.numerator, ret.denominator);
   return ret;
 }
+
+long project_long_onto_range(long a, long min, long max) {
+  fraction f_scale = fraction_create(a, LONG_MAX);
+  fraction f_min = fraction_create_from_whole_number(min);
+  fraction f_max = fraction_create_from_whole_number(max);
+  fraction f_projected = fraction_project_onto_range(&f_scale, &f_min, &f_max);
+  fraction f_rounded = fraction_round(&f_projected);
+  return fraction_to_whole_number(&f_rounded);
+}
