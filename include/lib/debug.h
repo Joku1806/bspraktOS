@@ -21,7 +21,7 @@
 #endif
 
 #ifndef LOG_COLORED_OUTPUT
-#define LOG_COLORED_OUTPUT true
+#define LOG_COLORED_OUTPUT false
 #endif
 
 #if LOG_COLORED_OUTPUT
