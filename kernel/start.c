@@ -9,6 +9,7 @@
 #include <kernel/regcheck.h>
 #include <kernel/thread.h>
 #include <lib/debug.h>
+#include <lib/math.h>
 #include <lib/timing.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -37,7 +38,7 @@ void preview_module_colors() {
         .lightness = project_long_onto_range(lightness_hash, 50, 80),
     };
     rgb_color module_color = hsl_to_rgb(&hsl);
-    kprintf("\033[38;2;%u;%u;%um%s\033[0m\n", module_color.red, module_color.green, module_color.blue, modules[i]);
+    kprintf("hsl(%3u°, %3u%%, %3u%%) -> \033[38;2;%u;%u;%um%s\033[0m\n", hsl.hue, hsl.saturation, hsl.lightness, module_color.red, module_color.green, module_color.blue, modules[i]);
   }
 }
 
