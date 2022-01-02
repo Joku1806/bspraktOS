@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#if LOG_COLORED_OUTPUT
 void preview_module_colors() {
   const char *modules[] = {
       "Unknown",
@@ -41,6 +42,7 @@ void preview_module_colors() {
     kprintf("hsl(%3u°, %3u%%, %3u%%) -> \033[38;2;%u;%u;%um%s\033[0m\n", hsl.hue, hsl.saturation, hsl.lightness, module_color.red, module_color.green, module_color.blue, modules[i]);
   }
 }
+#endif
 
 void print_menu() {
   kprintf("Willkommen in unserem Betriebssystem!\n"
@@ -63,5 +65,7 @@ void start_kernel() {
   pl001_setup();
   thread_list_initialise();
   print_menu();
+  #if LOG_COLORED_OUTPUT
   preview_module_colors();
+  #endif
 }
