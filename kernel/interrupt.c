@@ -37,7 +37,7 @@ void reset_interrupt_handler(registers *regs) {
   if ((get_spsr() & psr_mode) == psr_mode_user) {
     VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
   } else {
-    panicln("Got reset interrupt in kernel space. Halting system.");
+    panicln("Got reset interrupt in kernel space.");
   }
 }
 
@@ -51,7 +51,7 @@ void undefined_instruction_interrupt_handler(registers *regs) {
   if ((get_spsr() & psr_mode) == psr_mode_user) {
     VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
   } else {
-    panicln("Got undefined instruction interrupt in kernel space. Halting system.");
+    panicln("Got undefined instruction interrupt in kernel space.");
   }
 }
 
@@ -85,7 +85,7 @@ void software_interrupt_handler(registers *regs) {
   if ((get_spsr() & psr_mode) == psr_mode_user) {
     VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
   } else {
-    panicln("Got software interrupt in kernel space. Halting system.");
+    panicln("Got software interrupt in kernel space.");
   }
 }
 
@@ -106,7 +106,7 @@ void prefetch_abort_interrupt_handler(registers *regs) {
   if ((get_spsr() & psr_mode) == psr_mode_user) {
     VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
   } else {
-    panicln("Got prefetch abort interrupt in kernel space. Halting system.");
+    panicln("Got prefetch abort interrupt in kernel space.");
   }
 }
 
@@ -127,7 +127,7 @@ void data_abort_interrupt_handler(registers *regs) {
   if ((get_spsr() & psr_mode) == psr_mode_user) {
     VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
   } else {
-    panicln("Got data abort interrupt in kernel space. Halting system.");
+    panicln("Got data abort interrupt in kernel space.");
   }
 }
 

@@ -66,6 +66,7 @@ size_t ringbuffer_read(ringbuffer *r, void *dst, size_t length) {
     length = cap;
   }
 
+  dbgln("Reading %u characters from ringbuffer %p.", length, r);
   ringbuffer_read_with_offset(r, dst, length, r->read_index);
   r->read_index += length;
   return length;
@@ -78,6 +79,7 @@ size_t ringbuffer_write(ringbuffer *r, const void *src, size_t length) {
     length = cap;
   }
 
+  dbgln("Writing %u characters to ringbuffer %p.", length, r);
   ringbuffer_write_with_offset(r, src, length, r->write_index);
   r->write_index += length;
   return length;

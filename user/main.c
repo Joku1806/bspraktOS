@@ -13,7 +13,7 @@
 
 void main(void *x) {
   char ch = *(char *)x;
-  dbgln("Successfully started thread with char argument '%c'!", ch);
+  dbgln("Successfully started user thread with char argument '%c'!", ch);
 
   switch (ch) {
     case 'a':
