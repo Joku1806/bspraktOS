@@ -21,11 +21,6 @@ fraction fraction_create(long a, long b) {
   return f;
 }
 
-fraction fraction_create_from_whole_number(long a) {
-  fraction f = {.numerator = a, .denominator = 1};
-  return f;
-}
-
 long fraction_to_whole_number(fraction *a) {
   return a->numerator / a->denominator;
 }
@@ -181,8 +176,8 @@ fraction fraction_project_onto_range(fraction *a, fraction *min, fraction *max) 
 
 long project_long_onto_range(long a, long min, long max) {
   fraction f_scale = fraction_create(a, LONG_MAX);
-  fraction f_min = fraction_create_from_whole_number(min);
-  fraction f_max = fraction_create_from_whole_number(max);
+  fraction f_min = fraction_from_number(min);
+  fraction f_max = fraction_from_number(max);
   fraction f_projected = fraction_project_onto_range(&f_scale, &f_min, &f_max);
   fraction f_rounded = fraction_round(&f_projected);
   return fraction_to_whole_number(&f_rounded);

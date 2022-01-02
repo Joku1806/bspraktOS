@@ -1,3 +1,4 @@
+#include <lib/assertions.h>
 #include <lib/math.h>
 #include <stddef.h>
 
@@ -16,4 +17,9 @@ long gcd(long a, long b) {
 
 long lcm(long a, long b) {
   return ABS(a) / gcd(a, b) * ABS(b);
+}
+
+unsigned clamp_unsigned(unsigned num, unsigned min, unsigned max) {
+  VERIFY(min < max);
+  return num < min ? min : (num > max ? max : num);
 }

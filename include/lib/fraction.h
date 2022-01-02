@@ -9,7 +9,7 @@ typedef struct {
 } fraction;
 
 fraction fraction_create(long a, long b);
-fraction fraction_create_from_whole_number(long a);
+#define fraction_from_number(a) fraction_create(a, 1);
 long fraction_to_whole_number(fraction *a);
 
 bool fraction_lt(fraction *a, fraction *b);

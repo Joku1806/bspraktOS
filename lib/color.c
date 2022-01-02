@@ -11,12 +11,12 @@
 
 // Angepasster Code von https://gist.github.com/mjackson/5311256
 fraction hue_to_rgb(fraction *p, fraction *q, fraction *t) {
-  fraction c0 = fraction_create_from_whole_number(0);
-  fraction c1 = fraction_create_from_whole_number(1);
+  fraction c0 = fraction_from_number(0);
+  fraction c1 = fraction_from_number(1);
   fraction c1_6 = fraction_create(1, 6);
   fraction c1_2 = fraction_create(1, 2);
   fraction c2_3 = fraction_create(2, 3);
-  fraction c6 = fraction_create_from_whole_number(6);
+  fraction c6 = fraction_from_number(6);
 
   if (fraction_lt(t, &c0)) {
     // Aufpassen, das wird t außerhalb dieser Funktion überschreiben.
@@ -56,12 +56,12 @@ rgb_color hsl_to_rgb(hsl_color *hsl) {
 
   dbgln("Coverting hsl(%u°, %u%%, %u%%) to rgb.", hsl->hue, hsl->saturation, hsl->lightness);
 
-  fraction c0 = fraction_create_from_whole_number(0);
+  fraction c0 = fraction_from_number(0);
   fraction c1_3 = fraction_create(1, 3);
   fraction c1_2 = fraction_create(1, 2);
-  fraction c1 = fraction_create_from_whole_number(1);
-  fraction c2 = fraction_create_from_whole_number(2);
-  fraction c255 = fraction_create_from_whole_number(255);
+  fraction c1 = fraction_from_number(1);
+  fraction c2 = fraction_from_number(2);
+  fraction c255 = fraction_from_number(255);
 
   fraction r, g, b;
   fraction h = fraction_create(hsl->hue, 360);

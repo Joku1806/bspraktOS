@@ -29,31 +29,36 @@
 #include <lib/color.h>
 #include <lib/fraction.h>
 #include <lib/hash.h>
+#include <lib/math.h>
 #include <limits.h>
 
 #define ESC_RESET_COLOR "\033[0m"
 
+// FIXME: vllt bessere Farben finden
 static const rgb_color debug_warning_color = {.red = 249, .green = 115, .blue = 31};
 static const rgb_color debug_panic_color = {.red = 236, .green = 55, .blue = 19};
 
 static rgb_color module_color;
 static bool initialised_module_color = false;
 
-#define HUE_SEED 37
-#define SATURATION_SEED 59
-#define LIGHTNESS_SEED 83
+#define HUE_SEED 0xf9136546
+#define SATURATION_SEED 0x70b5bb43
+#define LIGHTNESS_SEED 0x8a4ef7c5
 
-#define INITIALISE_MODULE_COLOR_ONCE()                                                             \
-  do {                                                                                             \
-    if (!initialised_module_color) {                                                               \
-      hsl_color hsl = {                                                                            \
-          .hue = project_long_onto_range(hash_string(LOG_LABEL, HUE_SEED), 60, 330),               \
-          .saturation = project_long_onto_range(hash_string(LOG_LABEL, SATURATION_SEED), 70, 100), \
-          .lightness = project_long_onto_range(hash_string(LOG_LABEL, LIGHTNESS_SEED), 60, 80),    \
-      };                                                                                           \
-      module_color = hsl_to_rgb(&hsl);                                                             \
-      initialised_module_color = true;                                                             \
-    }                                                                                              \
+#define INITIALISE_MODULE_COLOR_ONCE()                                                                       \
+  do {                                                                                                       \
+    if (!initialised_module_color) {                                                                         \
+      long hue_hash = clamp_unsigned(hash_string_with_seed(LOG_LABEL, HUE_SEED), 0, LONG_MAX);               \
+      long saturation_hash = clamp_unsigned(hash_string_with_seed(LOG_LABEL, SATURATION_SEED), 0, LONG_MAX); \
+      long lightness_hash = clamp_unsigned(hash_string_with_seed(LOG_LABEL, LIGHTNESS_SEED), 0, LONG_MAX);   \
+      hsl_color hsl = {                                                                                      \
+          .hue = project_long_onto_range(hue_hash, 0, 359),                                                  \
+          .saturation = project_long_onto_range(saturation_hash, 70, 90),                                    \
+          .lightness = project_long_onto_range(lightness_hash, 50, 80),                                      \
+      };                                                                                                     \
+      module_color = hsl_to_rgb(&hsl);                                                                       \
+      initialised_module_color = true;                                                                       \
+    }                                                                                                        \
   } while (0)
 
 #define PRINT_COLORED(str, color)                                                           \

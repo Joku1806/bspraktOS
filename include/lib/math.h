@@ -11,5 +11,6 @@
 
 long gcd(long a, long b);
 long lcm(long a, long b);
+unsigned clamp_unsigned(unsigned num, unsigned min, unsigned max);
 
 #endif
