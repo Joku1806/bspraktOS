@@ -1,12 +1,12 @@
 #define LOG_LEVEL WARNING_LEVEL
-#define LOG_LABEL "Bounded Linked List"
+#define LOG_LABEL "Intrusive List"
 
 #define VERIFY_INTEGRITY_AFTER_OP false
 
 #include <kernel/thread.h>
 #include <lib/assertions.h>
-#include <lib/bounded_linked_list.h>
 #include <lib/debug.h>
+#include <lib/intrusive_list.h>
 #include <stdbool.h>
 #include <stddef.h>
 

@@ -9,7 +9,6 @@
 #include <kernel/syscall.h>
 #include <kernel/thread.h>
 #include <lib/assertions.h>
-#include <lib/bounded_linked_list.h>
 #include <lib/debug.h>
 #include <lib/math.h>
 #include <lib/string.h>

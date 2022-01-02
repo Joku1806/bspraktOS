@@ -1,5 +1,5 @@
-#ifndef BOUNDED_LINKED_LIST_H
-#define BOUNDED_LINKED_LIST_H
+#ifndef INTRUSIVE_LIST_H
+#define INTRUSIVE_LIST_H
 
 #include <stdbool.h>
 

@@ -3,8 +3,8 @@
 
 #include <kernel/scheduler.h>
 #include <kernel/thread.h>
-#include <lib/bounded_linked_list.h>
 #include <lib/debug.h>
+#include <lib/intrusive_list.h>
 #include <stddef.h>
 #include <stdint.h>
 

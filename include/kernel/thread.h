@@ -2,7 +2,7 @@
 #define THREAD_H
 
 #include <arch/cpu/registers.h>
-#include <lib/bounded_linked_list.h>
+#include <lib/intrusive_list.h>
 #include <stddef.h>
 #include <stdint.h>
 
