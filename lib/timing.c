@@ -25,3 +25,7 @@ void sleep_macgyver(size_t instrs) {
                      : "memory");
   }
 }
+
+size_t mhz_to_milliseconds(size_t mhz){
+  return (1000 * mhz) / SYSTIMER_FREQUENCY_HZ;
+}

@@ -20,3 +20,9 @@ char to_ascii_hexadecimal_digit(uint8_t in) {
     return in + 'a' - 10;
   }
 }
+
+bool is_uppercase(char ch){
+
+  return (ch < 91 && ch > 64);
+  
+}

@@ -15,4 +15,6 @@ uint8_t parse_ascii_decimal_digit(char ch);
 // ASCII-Repräsentation.
 char to_ascii_hexadecimal_digit(uint8_t in);
 
+bool is_uppercase(char ch);
+
 #endif

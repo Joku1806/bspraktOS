@@ -3,6 +3,7 @@
 
 #define NUM_CALCULATION_CYCLES 50
 
+#include "kernel/syscall.h"
 #include <config.h>
 #include <kernel/kprintf.h>
 #include <kernel/regcheck.h>
@@ -10,31 +11,30 @@
 #include <lib/timing.h>
 #include <stddef.h>
 #include <user/main.h>
+#include <lib/character_types.h>
 
-void main(void *x) {
+
+void printer(void *x){
+
   char ch = *(char *)x;
   dbgln("Successfully started user thread with char argument '%c'!", ch);
 
-  switch (ch) {
-    case 'a':
-      asm volatile("mov r0, #0x1 \n ldr r0, [r0]");
-      break;
-    case 'p':
-      asm volatile("bkpt #0");
-      break;
-    case 's':
-      asm volatile("svc #1337");
-      break;
-    case 'u':
-      asm volatile(".word 0xf7f0a000\n");
-      break;
-    case 'c':
-      register_checker();
-      break;
-    default:
-      for (size_t cycles = 0; cycles < NUM_CALCULATION_CYCLES; cycles++) {
-        sleep_macgyver(BUSY_WAIT_COUNTER);
-        kprintf("%c", ch);
-      }
+  for(int i = 0; i < 20; i++){
+
+    sys$output_character(ch);
+
+    if(is_uppercase(ch)){sleep_macgyver(BUSY_WAIT_COUNTER);}
+    else{sys$stall_thread(mhz_to_milliseconds(BUSY_WAIT_COUNTER));}
+
   }
+
+}
+
+void main() {
+  
+  while(true){
+    char ch = sys$read_character();
+    sys$create_thread(printer, &ch, sizeof(ch));
+  }
+
 }

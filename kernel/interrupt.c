@@ -94,7 +94,6 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
 
     case SYSCALL_EXIT_THREAD_NO: {
       thread_cleanup();
-      populate_thread_pool();
       schedule_thread(regs);
       systimer_reset();
       return 0;
@@ -167,29 +166,6 @@ void data_abort_interrupt_handler(registers *regs) {
   }
 }
 
-void populate_thread_pool() {
-  while (scheduler_is_thread_available() && pl001_has_unread_character()) {
-    char ch = pl001_read();
-    dbgln("Got character %c", ch);
-
-    switch (ch) {
-      case 'A':
-        asm volatile("mov r0, #0x1 \n ldr r0, [r0]");
-        break;
-      case 'P':
-        asm volatile("bkpt #0");
-        break;
-      case 'S':
-        asm volatile("svc #1337");
-        break;
-      case 'U':
-        asm volatile(".word 0xf7f0a000\n");
-        break;
-      default:
-        thread_create(main, &ch, 1);
-    }
-  }
-}
 
 void irq_interrupt_handler(registers *regs) {
   if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
@@ -200,8 +176,6 @@ void irq_interrupt_handler(registers *regs) {
   } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
     scheduler_unblock_input_waiting_threads(pl001_read());
-
-    // populate_thread_pool();
   }
 }
 
