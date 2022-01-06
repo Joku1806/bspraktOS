@@ -12,16 +12,18 @@
 
 typedef enum {
   ready = 0,
-  waiting = 1,
-  running = 2,
-  finished = 3,
+  stall_waiting = 1,
+  input_waiting = 2,
+  running = 3,
+  finished = 4,
 } thread_status;
 
 typedef struct {
   node node;
   registers regs;
   uint32_t cpsr;
-  size_t index;
+  size_t id;
+  unsigned stall_until;
 } tcb;
 
 node *get_idle_thread();
@@ -35,6 +37,7 @@ void save_thread_context(tcb *thread, registers *regs);
 void perform_stack_context_switch(registers *current_thread_regs, tcb *thread);
 void thread_list_initialise();
 void thread_create(void (*func)(void *), const void *args, unsigned int args_size);
+void thread_stall(unsigned ms);
 void thread_cleanup();
 
 #endif

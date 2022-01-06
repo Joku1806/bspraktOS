@@ -1,3 +1,4 @@
+#include "lib/intrusive_list.h"
 #define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "Interrupt"
 
@@ -16,6 +17,7 @@
 #include <lib/assertions.h>
 #include <lib/error_codes.h>
 #include <lib/string.h>
+#include <lib/timing.h>
 #include <stdint.h>
 #include <user/main.h>
 
@@ -35,7 +37,7 @@ void reset_interrupt_handler(registers *regs) {
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) == psr_mode_user) {
-    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
+    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_THREAD_NO) >= 0);
   } else {
     panicln("Got reset interrupt in kernel space.");
   }
@@ -49,20 +51,55 @@ void undefined_instruction_interrupt_handler(registers *regs) {
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) == psr_mode_user) {
-    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
+    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_THREAD_NO) >= 0);
   } else {
     panicln("Got undefined instruction interrupt in kernel space.");
   }
 }
 
 int dispatch_syscall(registers *regs, uint32_t syscall_no) {
+  tcb *calling_thread = get_first_node(get_thread_list_head(running));
+
   switch (syscall_no) {
-    case SYSCALL_EXIT_NO:
+    case SYSCALL_READ_CHARACTER_NO: {
+      schedule_thread(regs);
+      scheduler_ignore_thread_until_character_input(calling_thread);
+      return 0;
+    }
+
+    case SYSCALL_OUTPUT_CHARACTER_NO: {
+      char ch = *(char *)regs->sp;
+      pl001_send(ch);
+      return 0;
+    }
+
+    case SYSCALL_CREATE_THREAD_NO: {
+      void *func = *(void **)regs->sp;
+      void *args = *(void **)((uint32_t)regs->sp + sizeof(void *));
+      unsigned int args_size = *(unsigned int *)((uint32_t)regs->sp + sizeof(void *) + sizeof(void *));
+      thread_create(func, args, args_size);
+      return 0;
+    }
+
+    case SYSCALL_STALL_THREAD_NO: {
+      unsigned ms = *(unsigned *)regs->sp;
+      // WICHTIG: Die Reihenfolge hier nicht ändern, ansonsten wird der
+      // Kontext vom aufrufenden Thread nicht gespeichert!
+      // FIXME: Sollte nicht von der Reihenfolge abhängig sein, vielleicht
+      // können wir den Threadkontext explizit sichern?
+      schedule_thread(regs);
+      scheduler_ignore_thread_until_timer_match(calling_thread, systimer_value() + milliseconds_to_mhz(ms));
+      systimer_reset();
+      return 0;
+    }
+
+    case SYSCALL_EXIT_THREAD_NO: {
       thread_cleanup();
       populate_thread_pool();
       schedule_thread(regs);
       systimer_reset();
       return 0;
+    }
   }
 
   return -EINVAL;
@@ -83,7 +120,7 @@ void software_interrupt_handler(registers *regs) {
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) == psr_mode_user) {
-    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
+    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_THREAD_NO) >= 0);
   } else {
     panicln("Got software interrupt in kernel space.");
   }
@@ -104,7 +141,7 @@ void prefetch_abort_interrupt_handler(registers *regs) {
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) == psr_mode_user) {
-    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
+    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_THREAD_NO) >= 0);
   } else {
     panicln("Got prefetch abort interrupt in kernel space.");
   }
@@ -125,7 +162,7 @@ void data_abort_interrupt_handler(registers *regs) {
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) == psr_mode_user) {
-    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_NO) >= 0);
+    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_THREAD_NO) >= 0);
   } else {
     panicln("Got data abort interrupt in kernel space.");
   }
@@ -158,11 +195,14 @@ void populate_thread_pool() {
 void irq_interrupt_handler(registers *regs) {
   if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
     kprintf("!");
+    scheduler_unblock_stall_waiting_threads(systimer_value());
     schedule_thread(regs);
     systimer_reset();
   } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
-    populate_thread_pool();
+    scheduler_unblock_input_waiting_threads(pl001_read());
+
+    // populate_thread_pool();
   }
 }
 

@@ -23,3 +23,8 @@ unsigned clamp_unsigned(unsigned num, unsigned min, unsigned max) {
   VERIFY(min < max);
   return num < min ? min : (num > max ? max : num);
 }
+
+unsigned align8(unsigned num) {
+  VERIFY(UINT_MAX - 8 >= num);
+  return num % 8 != 0 ? num + 8 - (num % 8) : num;
+}

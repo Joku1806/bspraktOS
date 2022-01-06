@@ -25,6 +25,22 @@ bool is_list_empty(node *list) {
   return list->next == NULL;
 }
 
+bool is_first_node(node *list, node *n) {
+  if (is_list_empty(list)) {
+    return false;
+  }
+
+  return get_first_node(list) == n;
+}
+
+bool is_last_node(node *list, node *n) {
+  if (is_list_empty(list)) {
+    return false;
+  }
+
+  return get_last_node(list) == n;
+}
+
 node *get_first_node(node *list) {
   VERIFY(is_list_head(list));
   VERIFY(!is_list_empty(list));
@@ -39,6 +55,7 @@ node *get_last_node(node *list) {
   return list->next->previous;
 }
 
+// FIXME: sollte Teil von kernel/thread sein
 void verify_linked_list_integrity() {
   dbgln("Now checking list integrity.");
   node *ruh = get_thread_list_head(running);

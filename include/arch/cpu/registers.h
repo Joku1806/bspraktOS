@@ -13,4 +13,7 @@ typedef struct {
   void *pc;
 } registers;
 
+uint32_t get_current_sp();
+void set_current_sp(uint32_t sp);
+
 #endif

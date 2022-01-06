@@ -10,6 +10,7 @@
 #include <kernel/thread.h>
 #include <lib/assertions.h>
 #include <lib/debug.h>
+#include <lib/intrusive_list.h>
 #include <lib/math.h>
 #include <lib/string.h>
 #include <stddef.h>
@@ -18,7 +19,8 @@
 static tcb blocks[THREAD_COUNT];
 
 node ready_head = {.previous = NULL, .next = NULL};
-node waiting_head = {.previous = NULL, .next = NULL};
+node stall_waiting_head = {.previous = NULL, .next = NULL};
+node input_waiting_head = {.previous = NULL, .next = NULL};
 node running_head = {.previous = NULL, .next = NULL};
 node finished_head = {.previous = NULL, .next = (node *)blocks};
 
@@ -28,8 +30,10 @@ node *get_thread_list_head(thread_status status) {
   switch (status) {
     case ready:
       return &ready_head;
-    case waiting:
-      return &waiting_head;
+    case stall_waiting:
+      return &stall_waiting_head;
+    case input_waiting:
+      return &input_waiting_head;
     case running:
       return &running_head;
     case finished:
@@ -42,8 +46,10 @@ node *get_thread_list_head(thread_status status) {
 const char *get_list_name(node *head) {
   if (head == &ready_head) {
     return "Ready List";
-  } else if (head == &waiting_head) {
-    return "Waiting List";
+  } else if (head == &stall_waiting_head) {
+    return "Stall Waiting List";
+  } else if (head == &input_waiting_head) {
+    return "Input Waiting List";
   } else if (head == &running_head) {
     return "Running List";
   } else if (head == &finished_head) {
@@ -53,13 +59,13 @@ const char *get_list_name(node *head) {
   VERIFY_NOT_REACHED();
 }
 
-size_t get_thread_id(node *n) { return ((tcb *)n)->index; }
+size_t get_thread_id(node *n) { return ((tcb *)n)->id; }
 
 void reset_thread_context(size_t index) {
-  blocks[index].index = index;
+  blocks[index].id = index;
   blocks[index].cpsr = psr_mode_user;
   blocks[index].regs.sp = (void *)(THREAD_SP_BASE - index * STACK_SIZE);
-  blocks[index].regs.lr = sys$exit;
+  blocks[index].regs.lr = sys$exit_thread;
   blocks[index].regs.pc = index == IDLE_THREAD_INDEX ? halt_cpu : NULL;
 }
 
@@ -119,11 +125,7 @@ void thread_create(void (*func)(void *), const void *args, unsigned int args_siz
   tcb *thread = (tcb *)tnode;
   dbgln("Assigning new task to thread %u.", get_thread_id(tnode));
 
-  thread->regs.sp = (char *)thread->regs.sp - args_size;
-  if (args_size % 8 != 0) { // 8-byte align
-    thread->regs.sp = (char *)thread->regs.sp - (8 - args_size % 8);
-  }
-
+  thread->regs.sp -= align8(args_size);
   memcpy(thread->regs.sp, args, args_size);
   thread->regs.general[0] = (uint32_t)thread->regs.sp;
   thread->regs.pc = func;
