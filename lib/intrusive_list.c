@@ -3,7 +3,6 @@
 
 #define VERIFY_INTEGRITY_AFTER_OP false
 
-#include <kernel/thread.h>
 #include <lib/assertions.h>
 #include <lib/debug.h>
 #include <lib/intrusive_list.h>
@@ -55,48 +54,6 @@ node *get_last_node(node *list) {
   return list->next->previous;
 }
 
-// FIXME: sollte Teil von kernel/thread sein
-void verify_linked_list_integrity() {
-  dbgln("Now checking list integrity.");
-  node *ruh = get_thread_list_head(running);
-  node *reh = get_thread_list_head(ready);
-  node *wh = get_thread_list_head(waiting);
-  node *fh = get_thread_list_head(finished);
-
-  VERIFY(ruh != reh && ruh != wh && ruh != fh);
-  VERIFY(reh != wh && reh != fh);
-  VERIFY(wh != fh);
-
-  node *lists[4] = {ruh, reh, wh, fh};
-  bool checked[THREAD_COUNT];
-  for (size_t i = 0; i < THREAD_COUNT; i++) {
-    checked[i] = false;
-  }
-
-  for (size_t i = 0; i < 4; i++) {
-    if (is_list_empty(lists[i])) {
-      dbgln("%s is empty, continuing...", get_list_name(lists[i]));
-      continue;
-    }
-
-    node *start = get_first_node(lists[i]);
-    node *current = start;
-
-    do {
-      dbgln("Now checking thread %u, currently part of %s.", get_thread_id(current), get_list_name(lists[i]));
-      dbgln("%u <-> %u <-> %u", get_thread_id(current->previous), get_thread_id(current), get_thread_id(current->next));
-      VERIFY(is_list_node(current));
-      VERIFY(current == current->previous->next);
-      VERIFY(current == current->next->previous);
-      VERIFY(!checked[get_thread_id(current)]);
-      checked[get_thread_id(current)] = true;
-      current = current->next;
-    } while (current != start);
-  }
-
-  dbgln("List is in a valid state. Congratulations!");
-}
-
 void connect_nodes(node *from, node *to) {
   VERIFY(is_list_node(from));
   VERIFY(is_list_node(to));
@@ -109,26 +66,22 @@ void connect_nodes(node *from, node *to) {
 void remove_node_from_list(node *list, node *n) {
   VERIFY(is_list_head(list));
   VERIFY(is_list_node(n));
-  dbgln("Removing node %u from %s.", get_thread_id(n), get_list_name(list));
+  dbgln("Removing node %p from list %p.", n, p);
 
   if (list->next == n) {
-    dbgln("Node %u is first node in list.", get_thread_id(n));
+    dbgln("Node %p is first node in list.", n);
     // FIXME: wird der erste Check überhaupt gebraucht?
     if (n == n->previous && n == n->next) {
-      dbgln("Node %u is also only node in list, clearing list head.", get_thread_id(n));
+      dbgln("Node %p is also only node in list, clearing list head.", n);
       list->next = NULL;
     } else {
-      dbgln("Pointing %s head to second node %u.", get_list_name(list), get_thread_id(n->next));
+      dbgln("Pointing head of list %p to second node %p.", list, n->next);
       list->next = n->next;
     }
   }
 
   connect_nodes(n->previous, n->next);
   connect_nodes(n, n);
-
-  if (VERIFY_INTEGRITY_AFTER_OP) {
-    verify_linked_list_integrity();
-  }
 }
 
 // FIXME: list muss nicht unbedingt ein list head sein
@@ -146,16 +99,12 @@ void append_node_to_list(node *list, node *n) {
     // am Ende der Liste anhängen ist das gleiche wie als erstes Element in die Liste einfügen
     node *head = list;
     list = get_last_node(list);
-    dbgln("Pointing %s head to node %u.", get_list_name(head), get_thread_id(n));
+    dbgln("Pointing head of list %p to node %p.", head, n);
     head->next = n;
   }
 
   connect_nodes(n, list->next);
   connect_nodes(list, n);
-
-  if (VERIFY_INTEGRITY_AFTER_OP) {
-    verify_linked_list_integrity();
-  }
 }
 
 void transfer_list_node(node *from, node *to, node *n) {

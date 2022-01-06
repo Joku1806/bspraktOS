@@ -9,6 +9,7 @@ typedef struct node {
 } node;
 
 bool is_list_empty(node *list);
+bool is_list_node(node *n);
 bool is_first_node(node *list, node *n);
 bool is_last_node(node *list, node *n);
 node *get_first_node(node *list);

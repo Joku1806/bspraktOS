@@ -7,7 +7,7 @@
 #include <config.h>
 #include <kernel/kprintf.h>
 #include <kernel/regcheck.h>
-#include <kernel/thread.h>
+#include <kernel/scheduler.h>
 #include <lib/debug.h>
 #include <lib/math.h>
 #include <lib/timing.h>
@@ -21,7 +21,6 @@ void preview_module_colors() {
       "Interrupt",
       "Scheduler",
       "Kernel Start",
-      "Thread",
       "Color",
       "Intrusive List",
       "Ringbuffer",
@@ -65,7 +64,7 @@ void start_kernel() {
   pl001_setup();
   thread_list_initialise();
   print_menu();
-  #if LOG_COLORED_OUTPUT
+#if LOG_COLORED_OUTPUT
   preview_module_colors();
-  #endif
+#endif
 }

@@ -1,4 +1,3 @@
-#include "lib/intrusive_list.h"
 #define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "Interrupt"
 
@@ -13,9 +12,9 @@
 #include <kernel/kprintf.h>
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
-#include <kernel/thread.h>
 #include <lib/assertions.h>
 #include <lib/error_codes.h>
+#include <lib/intrusive_list.h>
 #include <lib/string.h>
 #include <lib/timing.h>
 #include <stdint.h>
@@ -58,7 +57,7 @@ void undefined_instruction_interrupt_handler(registers *regs) {
 }
 
 int dispatch_syscall(registers *regs, uint32_t syscall_no) {
-  tcb *calling_thread = get_first_node(get_thread_list_head(running));
+  tcb *calling_thread = scheduler_get_running_thread();
 
   switch (syscall_no) {
     case SYSCALL_READ_CHARACTER_NO: {
@@ -169,7 +168,7 @@ void data_abort_interrupt_handler(registers *regs) {
 }
 
 void populate_thread_pool() {
-  while (is_thread_available() && pl001_has_unread_character()) {
+  while (scheduler_is_thread_available() && pl001_has_unread_character()) {
     char ch = pl001_read();
     dbgln("Got character %c", ch);
 
