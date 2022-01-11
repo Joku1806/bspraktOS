@@ -15,9 +15,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
+extern void kernel_init();
+extern void user_init();
+
 static tcb blocks[THREAD_COUNT];
 
-node ready_list = {.previous = NULL, .next = NULL};
+node ready_list = {.previous = NULL, .next = (node *)&blocks[KERNEL_START_THREAD_INDEX]};
 node stall_waiting_list = {.previous = NULL, .next = NULL};
 node input_waiting_list = {.previous = NULL, .next = NULL};
 node running_list = {.previous = NULL, .next = NULL};
@@ -38,10 +41,35 @@ void reset_thread_context(size_t index) {
   blocks[index].cpsr = psr_mode_user;
   blocks[index].regs.sp = (void *)(THREAD_SP_BASE - index * STACK_SIZE);
   blocks[index].regs.lr = sys$exit_thread;
-  blocks[index].regs.pc = index == IDLE_THREAD_INDEX ? halt_cpu : NULL;
+  blocks[index].regs.pc = NULL;
 }
 
-void thread_list_initialise() {
+void scheduler_initialise_kernel_start_thread() {
+  blocks[KERNEL_START_THREAD_INDEX].id = KERNEL_START_THREAD_INDEX;
+  blocks[KERNEL_START_THREAD_INDEX].cpsr = psr_mode_system;
+  blocks[KERNEL_START_THREAD_INDEX].regs.sp = (void *)(THREAD_SP_BASE - KERNEL_START_THREAD_INDEX * STACK_SIZE);
+  blocks[KERNEL_START_THREAD_INDEX].regs.lr = thread_cleanup;
+  blocks[KERNEL_START_THREAD_INDEX].regs.pc = kernel_init;
+}
+
+void scheduler_initialise_user_start_thread() {
+  blocks[USER_START_THREAD_INDEX].id = USER_START_THREAD_INDEX;
+  blocks[USER_START_THREAD_INDEX].cpsr = psr_mode_user;
+  blocks[USER_START_THREAD_INDEX].regs.sp = (void *)(THREAD_SP_BASE - KERNEL_START_THREAD_INDEX * STACK_SIZE);
+  blocks[USER_START_THREAD_INDEX].regs.lr = sys$exit_thread;
+  blocks[USER_START_THREAD_INDEX].regs.pc = user_init;
+}
+
+void scheduler_initialise_idle_thread() {
+  blocks[USER_START_THREAD_INDEX].id = IDLE_THREAD_INDEX;
+  blocks[USER_START_THREAD_INDEX].cpsr = psr_mode_user;
+  blocks[USER_START_THREAD_INDEX].regs.sp = (void *)(THREAD_SP_BASE - IDLE_THREAD_INDEX * STACK_SIZE);
+  blocks[USER_START_THREAD_INDEX].regs.lr = halt_cpu;
+  blocks[USER_START_THREAD_INDEX].regs.pc = halt_cpu;
+}
+
+void scheduler_initialise() {
+
   for (size_t i = 0; i < USER_THREAD_COUNT; i++) {
     node *current = (node *)&blocks[i];
     current->previous = (node *)&blocks[MODULO_SUB(i, 1, USER_THREAD_COUNT)];
@@ -49,10 +77,25 @@ void thread_list_initialise() {
     reset_thread_context(i);
   }
 
+  for (size_t i = USER_THREAD_COUNT; i < USER_THREAD_COUNT + BOOTSTRAP_THREAD_COUNT; i++) {
+    node *current = (node *)&blocks[i];
+    current->previous = (node *)&blocks[MODULO_SUB(i, 1, USER_THREAD_COUNT)];
+    current->next = (node *)&blocks[MODULO_ADD(i, 1, USER_THREAD_COUNT)];
+
+    switch (i) {
+      case KERNEL_START_THREAD_INDEX:
+        scheduler_initialise_kernel_start_thread();
+        break;
+      case USER_START_THREAD_INDEX:
+        scheduler_initialise_user_start_thread();
+        break;
+    }
+  }
+
   node *idle_thread = scheduler_get_idle_thread();
   idle_thread->previous = idle_thread;
   idle_thread->next = idle_thread;
-  reset_thread_context(IDLE_THREAD_INDEX);
+  scheduler_initialise_idle_thread();
 }
 
 void save_thread_context(tcb *thread, registers *regs) {
@@ -117,6 +160,10 @@ void thread_cleanup() {
 
 bool scheduler_is_thread_available() {
   return !is_list_empty(&finished_list);
+}
+
+bool scheduler_is_bootstrapping_thread(node *thread) {
+  return get_thread_id(thread) == KERNEL_START_THREAD_INDEX || get_thread_id(thread) == USER_START_THREAD_INDEX;
 }
 
 #if CONSTANTLY_VERIFY_THREAD_LIST_INTEGRITY
@@ -223,37 +270,37 @@ void scheduler_unblock_stall_waiting_threads(unsigned current_time) {
 }
 
 void schedule_thread(registers *thread_regs) {
-  node *next_thread = NULL;
-
   if (is_list_empty(&ready_list) && !is_list_empty(&running_list)) {
     dbgln("No other thread waiting for work, continuing to run current thread.");
     return;
   }
 
-  // FIXME: idle thread vielleicht einfach in ready Liste einfügen,
-  // sollte Logik ein bisschen vereinfachen
-  if (is_list_empty(&ready_list) && is_list_empty(&running_list)) {
-    dbgln("No thread waiting for work at all, scheduling idle thread (id=%u).", get_thread_id(get_idle_thread()));
-    next_thread = scheduler_get_idle_thread();
-  } else if (!is_list_empty(&ready_list)) {
-    dbgln("Now scheduling thread %u.", get_thread_id(get_first_node(ready_head)));
-
-    if (!is_list_empty(&running_list)) {
-      node *running_thread = get_first_node(&running_list);
-      remove_node_from_list(&running_list, running_thread);
-
-      if (running_thread != scheduler_get_idle_thread()) {
-        dbgln("Thread %u is not done yet, saving context.", get_thread_id(current_thread));
-        append_node_to_list(get_last_node(&ready_list), running_thread);
-        save_thread_context((tcb *)running_thread, thread_regs);
-      }
+  if (!is_list_empty(&ready_list) && !is_list_empty(&running_list)) {
+    node *running_thread = get_first_node(&running_list);
+    if (scheduler_is_bootstrapping_thread(running_thread)) {
+      dbgln("Current running thread is a bootstrapping thread, can't be switched out.");
+      return;
     }
-
-    next_thread = get_first_node(&ready_list);
   }
 
-  // FIXME: Ziemlich verwirrend, dass next_thread nicht unbedingt Teil der ready
-  // Liste sein muss, um aus seiner aktuellen Liste entfernt zu werden.
+  if (is_list_empty(&ready_list) && is_list_empty(&running_list)) {
+    append_node_to_list(&ready_list, scheduler_get_idle_thread());
+  }
+
+  dbgln("Now scheduling thread %u.", get_thread_id(get_first_node(ready_head)));
+
+  if (!is_list_empty(&running_list)) {
+    node *running_thread = get_first_node(&running_list);
+    remove_node_from_list(&running_list, running_thread);
+
+    if (running_thread != scheduler_get_idle_thread()) {
+      dbgln("Thread %u is not done yet, saving context.", get_thread_id(current_thread));
+      append_node_to_list(get_last_node(&ready_list), running_thread);
+      save_thread_context((tcb *)running_thread, thread_regs);
+    }
+  }
+
+  node *next_thread = get_first_node(&ready_list);
   transfer_list_node(&ready_list, &running_list, next_thread);
   perform_stack_context_switch(thread_regs, (tcb *)next_thread);
   kprintf("\n");

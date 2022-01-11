@@ -49,8 +49,10 @@ _bsprak:
   ldr sp, =USER_SYSTEM_SP
 
   bl _setup_ivt
-	/* Zu c Code springen */
-	bl  start_kernel
+	/* Kernel Thread Bootstrap */
+  @ FIXME: Kann sein dass wir da noch includes oder andere Lösung brauchen, um das zu erkennen
+  bl scheduler_initialise
+  bl schedule_thread
 .Lend:
 	WFI
 	b .Lend

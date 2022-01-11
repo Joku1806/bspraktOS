@@ -13,6 +13,7 @@
 #include <kernel/scheduler.h>
 #include <kernel/syscall.h>
 #include <lib/assertions.h>
+#include <lib/debug.h>
 #include <lib/error_codes.h>
 #include <lib/intrusive_list.h>
 #include <lib/string.h>

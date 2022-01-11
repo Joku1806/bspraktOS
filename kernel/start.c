@@ -1,3 +1,4 @@
+#include "kernel/syscall.h"
 #define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "Kernel Start"
 
@@ -13,6 +14,7 @@
 #include <lib/timing.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <user/main.h>
 
 #if LOG_COLORED_OUTPUT
 void preview_module_colors() {
@@ -58,13 +60,15 @@ void print_menu() {
           "c: (Thread) Registerchecker ausführen\n\n");
 }
 
-void start_kernel() {
-  // FIXME: Kernel Thread?
+void kernel_init() {
   systimer_reset();
   pl001_setup();
-  thread_list_initialise();
+}
+
+void user_init() {
   print_menu();
 #if LOG_COLORED_OUTPUT
   preview_module_colors();
 #endif
+  sys$create_thread(main, NULL, 0);
 }

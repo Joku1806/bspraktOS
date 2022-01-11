@@ -7,6 +7,7 @@ _setup_ivt:
   @ VBAR mit _ivt initialisieren
   ldr r0, =_ivt
   mcr p15, 0, r0, c12, c0, 0
+  @ FIXME: sollte der kernel ganz am Ende von init machen
   @ Interrupts aktivieren (nur aktueller Modus, sollte System sein!)
   cpsie i
   @ sysimer IRQ interrupts aktivieren (wir benutzen C1, deswegen TIMER1)

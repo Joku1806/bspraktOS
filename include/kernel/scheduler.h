@@ -7,9 +7,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define IDLE_THREAD_COUNT 1
+#define BOOTSTRAP_THREAD_COUNT 2
 #define USER_THREAD_COUNT 32
-#define THREAD_COUNT USER_THREAD_COUNT + 1
-#define IDLE_THREAD_INDEX USER_THREAD_COUNT
+#define THREAD_COUNT IDLE_THREAD_COUNT + BOOTSTRAP_THREAD_COUNT + USER_THREAD_COUNT
+#define KERNEL_START_THREAD_INDEX USER_THREAD_COUNT
+#define USER_START_THREAD_INDEX USER_THREAD_COUNT + 1
+#define IDLE_THREAD_INDEX USER_THREAD_COUNT + BOOTSTRAP_THREAD_COUNT
 
 #define CONSTANTLY_VERIFY_THREAD_LIST_INTEGRITY true
 #if CONSTANTLY_VERIFY_THREAD_LIST_INTEGRITY
@@ -46,11 +50,11 @@ size_t get_thread_id(node *n);
 void reset_thread_context(size_t index);
 void save_thread_context(tcb *thread, registers *regs);
 void perform_stack_context_switch(registers *current_thread_regs, tcb *thread);
-void thread_list_initialise();
 void thread_create(void (*func)(void *), const void *args, unsigned int args_size);
 void thread_stall(unsigned ms);
 void thread_cleanup();
 
+void scheduler_initialise();
 bool scheduler_is_thread_available();
 tcb *scheduler_get_running_thread();
 

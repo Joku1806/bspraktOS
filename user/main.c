@@ -3,10 +3,10 @@
 
 #define NUM_CALCULATION_CYCLES 50
 
-#include "kernel/syscall.h"
 #include <config.h>
 #include <kernel/kprintf.h>
 #include <kernel/regcheck.h>
+#include <kernel/syscall.h>
 #include <lib/character_types.h>
 #include <lib/debug.h>
 #include <lib/timing.h>
