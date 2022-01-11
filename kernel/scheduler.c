@@ -184,7 +184,6 @@ void scheduler_ignore_thread_until_timer_match(tcb *thread, unsigned match) {
 }
 
 void scheduler_unblock_input_waiting_threads(char ch) {
-
   while (!is_list_empty(&input_waiting_list)) {
     node *current = get_first_node(&input_waiting_list);
     tcb *thread = (tcb *)current;
