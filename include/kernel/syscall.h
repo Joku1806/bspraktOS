@@ -13,10 +13,10 @@
 bool is_syscall(void *instruction_address);
 uint32_t get_syscall_no(void *svc_instruction_address);
 
-char sys$read_character();
-void sys$output_character(char ch);
-void sys$create_thread(void (*func)(void *), const void *args, unsigned int args_size);
-void sys$stall_thread(unsigned ms);
-void sys$exit_thread();
+char sys$read_character() __attribute__((weak));
+void sys$output_character(char ch) __attribute__((weak));
+void sys$create_thread(void (*func)(void *), const void *args, unsigned int args_size) __attribute__((weak));
+void sys$stall_thread(unsigned ms) __attribute__((weak));
+void sys$exit_thread() __attribute__((weak));
 
 #endif

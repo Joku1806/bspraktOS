@@ -105,11 +105,13 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
 }
 
 void software_interrupt_handler(registers *regs) {
-  // -4 um lr zu korrigieren
-  void *svc_address = (char *)(regs->lr) - 4;
-  if (is_syscall(svc_address) &&
-      dispatch_syscall(regs, get_syscall_no(svc_address)) >= 0) {
-    return;
+  if ((get_spsr() & psr_mode) == psr_mode_user) {
+    // -4 um lr zu korrigieren
+    void *svc_address = (char *)(regs->lr) - 4;
+    if (is_syscall(svc_address) &&
+        dispatch_syscall(regs, get_syscall_no(svc_address)) >= 0) {
+      return;
+    }
   }
 
   kprintf("#############################################"
@@ -118,10 +120,14 @@ void software_interrupt_handler(registers *regs) {
   kprintf("Software Interrupt an Adresse %#010x\n", regs->lr);
   dump_registers(regs);
 
-  if ((get_spsr() & psr_mode) == psr_mode_user) {
-    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_THREAD_NO) >= 0);
-  } else {
+  if ((get_spsr() & psr_mode) != psr_mode_user) {
     panicln("Got software interrupt in kernel space.");
+  } else {
+    warnln("User Thread tried to call unknown or malformed syscall.");
+    // FIXME: Sollte in eine eigene Funktion rein
+    thread_cleanup();
+    schedule_thread(regs);
+    systimer_reset();
   }
 }
 
@@ -166,7 +172,6 @@ void data_abort_interrupt_handler(registers *regs) {
     panicln("Got data abort interrupt in kernel space.");
   }
 }
-
 
 void irq_interrupt_handler(registers *regs) {
   if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
