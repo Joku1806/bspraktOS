@@ -1,5 +1,3 @@
-#include <arch/bsp/interrupt_peripherals.h>
-
 #define SAVED_REGS_COUNT 16
 
 .global _setup_ivt
@@ -8,19 +6,6 @@ _setup_ivt:
   ldr r0, =_ivt
   mcr p15, 0, r0, c12, c0, 0
   @ FIXME: sollte der kernel ganz am Ende von init machen
-  @ Interrupts aktivieren (nur aktueller Modus, sollte System sein!)
-  cpsie i
-  @ sysimer IRQ interrupts aktivieren (wir benutzen C1, deswegen TIMER1)
-  ldr r1, =(INTERRUPT_PERIPHERALS_BASE + ENABLE_IRQS_1_OFFSET)
-  ldr r0, [r1]
-  orr r0, r0, #TIMER1_ENABLE_FLAG
-  str r0, [r1]
-
-  ldr r1, =(INTERRUPT_PERIPHERALS_BASE + ENABLE_IRQS_2_OFFSET)
-  ldr r0, [r1]
-  orr r0, r0, #UART_ENABLE_FLAG
-  str r0, [r1]
-
   bx lr
 
 .global _ivt

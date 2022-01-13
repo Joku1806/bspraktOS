@@ -1,5 +1,5 @@
-#ifndef INTERRUPT_PERIPHERALS_H
-#define INTERRUPT_PERIPHERALS_H
+#ifndef INTERRUPTS_H
+#define INTERRUPTS_H
 
 #define INTERRUPT_PERIPHERALS_BASE (0x7E00B000 - 0x3F000000)
 
@@ -36,6 +36,7 @@ typedef enum {
 } IRQ2_pending_flags;
 
 volatile uint32_t *peripherals_register(peripherals_register_offsets offset);
+extern void enable_peripheral_interrupts();
 
 #endif
 
