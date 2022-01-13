@@ -1,7 +1,7 @@
 #define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "Interrupt"
 
-#include <arch/bsp/interrupt_peripherals.h>
+#include <arch/bsp/peripherals.h>
 #include <arch/bsp/pl001.h>
 #include <arch/bsp/systimer.h>
 #include <arch/cpu/dfsr.h>
@@ -9,25 +9,18 @@
 #include <arch/cpu/mission_control.h>
 #include <arch/cpu/psr.h>
 #include <kernel/interrupt.h>
-#include <kernel/kprintf.h>
+#include <kernel/lib/kassertions.h>
+#include <kernel/lib/kdebug.h>
+#include <kernel/lib/kerror.h>
+#include <kernel/lib/kintrusive_list.h>
+#include <kernel/lib/kprintf.h>
+#include <kernel/lib/kstring.h>
+#include <kernel/lib/ktiming.h>
+#include <kernel/register_dump.h>
 #include <kernel/scheduler.h>
-#include <kernel/syscall.h>
-#include <lib/assertions.h>
-#include <lib/debug.h>
-#include <lib/error_codes.h>
-#include <lib/intrusive_list.h>
-#include <lib/string.h>
-#include <lib/timing.h>
+#include <kernel/syscall_impl.h>
 #include <stdint.h>
 #include <user/main.h>
-
-void populate_thread_pool();
-int dispatch_syscall(registers *regs, uint32_t syscall_no);
-void print_register_using_layout(uint32_t reg, register_layout_part *layout);
-void print_current_mode_status_registers(register_layout_part *layout);
-void print_general_registers(registers *regs);
-void print_various_mode_registers(register_layout_part *layout);
-void dump_registers(registers *regs);
 
 void reset_interrupt_handler(registers *regs) {
   kprintf("#############################################"
@@ -39,7 +32,7 @@ void reset_interrupt_handler(registers *regs) {
   if ((get_spsr() & psr_mode) == psr_mode_user) {
     VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_THREAD_NO) >= 0);
   } else {
-    panicln("Got reset interrupt in kernel space.");
+    kpanicln("Got reset interrupt in kernel space.");
   }
 }
 
@@ -53,63 +46,15 @@ void undefined_instruction_interrupt_handler(registers *regs) {
   if ((get_spsr() & psr_mode) == psr_mode_user) {
     VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_THREAD_NO) >= 0);
   } else {
-    panicln("Got undefined instruction interrupt in kernel space.");
+    kpanicln("Got undefined instruction interrupt in kernel space.");
   }
-}
-
-int dispatch_syscall(registers *regs, uint32_t syscall_no) {
-  tcb *calling_thread = scheduler_get_running_thread();
-
-  switch (syscall_no) {
-    case SYSCALL_READ_CHARACTER_NO: {
-      schedule_thread(regs);
-      scheduler_ignore_thread_until_character_input(calling_thread);
-      return 0;
-    }
-
-    case SYSCALL_OUTPUT_CHARACTER_NO: {
-      char ch = *(char *)regs->sp;
-      pl001_send(ch);
-      return 0;
-    }
-
-    case SYSCALL_CREATE_THREAD_NO: {
-      void *func = *(void **)regs->sp;
-      void *args = *(void **)((uint32_t)regs->sp + sizeof(void *));
-      unsigned int args_size = *(unsigned int *)((uint32_t)regs->sp + sizeof(void *) + sizeof(void *));
-      thread_create(func, args, args_size);
-      return 0;
-    }
-
-    case SYSCALL_STALL_THREAD_NO: {
-      unsigned ms = *(unsigned *)regs->sp;
-      // WICHTIG: Die Reihenfolge hier nicht ändern, ansonsten wird der
-      // Kontext vom aufrufenden Thread nicht gespeichert!
-      // FIXME: Sollte nicht von der Reihenfolge abhängig sein, vielleicht
-      // können wir den Threadkontext explizit sichern?
-      schedule_thread(regs);
-      scheduler_ignore_thread_until_timer_match(calling_thread, systimer_value() + milliseconds_to_mhz(ms));
-      systimer_reset();
-      return 0;
-    }
-
-    case SYSCALL_EXIT_THREAD_NO: {
-      thread_cleanup();
-      schedule_thread(regs);
-      systimer_reset();
-      return 0;
-    }
-  }
-
-  return -EINVAL;
 }
 
 void software_interrupt_handler(registers *regs) {
+  // FIXME: Sollte wahrscheinlich nach kernel/syscall_impl
   if ((get_spsr() & psr_mode) == psr_mode_user) {
-    // -4 um lr zu korrigieren
     void *svc_address = (char *)(regs->lr) - 4;
-    if (is_syscall(svc_address) &&
-        dispatch_syscall(regs, get_syscall_no(svc_address)) >= 0) {
+    if (is_valid_syscall(svc_address) && dispatch_syscall(regs, get_syscall_no(svc_address)) >= 0) {
       return;
     }
   }
@@ -121,13 +66,10 @@ void software_interrupt_handler(registers *regs) {
   dump_registers(regs);
 
   if ((get_spsr() & psr_mode) != psr_mode_user) {
-    panicln("Got software interrupt in kernel space.");
+    kpanicln("Got software interrupt in kernel space.");
   } else {
-    warnln("User Thread tried to call unknown or malformed syscall.");
-    // FIXME: Sollte in eine eigene Funktion rein
-    thread_cleanup();
-    schedule_thread(regs);
-    systimer_reset();
+    kwarnln("User Thread tried to call unknown or malformed syscall.");
+    VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_THREAD_NO) >= 0);
   }
 }
 
@@ -148,7 +90,7 @@ void prefetch_abort_interrupt_handler(registers *regs) {
   if ((get_spsr() & psr_mode) == psr_mode_user) {
     VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_THREAD_NO) >= 0);
   } else {
-    panicln("Got prefetch abort interrupt in kernel space.");
+    kpanicln("Got prefetch abort interrupt in kernel space.");
   }
 }
 
@@ -169,19 +111,17 @@ void data_abort_interrupt_handler(registers *regs) {
   if ((get_spsr() & psr_mode) == psr_mode_user) {
     VERIFY(dispatch_syscall(regs, SYSCALL_EXIT_THREAD_NO) >= 0);
   } else {
-    panicln("Got data abort interrupt in kernel space.");
+    kpanicln("Got data abort interrupt in kernel space.");
   }
 }
 
 void irq_interrupt_handler(registers *regs) {
   if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
-    kprintf("!");
     scheduler_unblock_stall_waiting_threads(systimer_value());
-    schedule_thread(regs);
+    scheduler_round_robin(regs);
     systimer_reset();
   } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
-    scheduler_unblock_input_waiting_threads(pl001_read());
   }
 }
 
