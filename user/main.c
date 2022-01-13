@@ -28,8 +28,12 @@ void printer(void *x) {
 }
 
 void user_main() {
+  int ret;
+
   while (true) {
     char ch = sys$read_character();
-    sys$create_thread(printer, &ch, sizeof(ch));
+    if ((ret = sys$create_thread(printer, &ch, sizeof(ch))) < 0) {
+      warnln("Couldn't create thread. Reason: %s", error_string(ret));
+    }
   }
 }
