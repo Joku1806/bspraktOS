@@ -2,9 +2,10 @@
 #define LOG_LABEL "PSR"
 
 #include <arch/cpu/psr.h>
-#include <lib/assertions.h>
+#include <kernel/lib/kassertions.h>
 #include <stdint.h>
 
+// FIXME: gleiches Problem wie bei dfsr und ifsr
 const char *get_mode_name(uint32_t psr) {
   switch (psr & psr_mode) {
     case psr_mode_user:

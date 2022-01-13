@@ -1,6 +1,6 @@
 #include <arch/bsp/systimer.h>
 #include <config.h>
-#include <kernel/kprintf.h>
+#include <kernel/lib/kprintf.h>
 #include <stdbool.h>
 #include <stdint.h>
 

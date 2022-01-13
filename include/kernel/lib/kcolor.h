@@ -7,14 +7,14 @@ typedef struct {
   uint8_t red;
   uint8_t green;
   uint8_t blue;
-} rgb_color;
+} k_rgb_color;
 
 typedef struct {
   uint16_t hue;
   uint8_t saturation;
   uint8_t lightness;
-} hsl_color;
+} k_hsl_color;
 
-rgb_color hsl_to_rgb(hsl_color *hsl);
+k_rgb_color k_hsl_to_rgb(k_hsl_color *hsl);
 
 #endif

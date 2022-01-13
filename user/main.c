@@ -5,8 +5,9 @@
 
 #include <config.h>
 #include <stddef.h>
-#include <user/lib/character_types.h>
+#include <user/lib/ascii.h>
 #include <user/lib/debug.h>
+#include <user/lib/error.h>
 #include <user/lib/syscall.h>
 #include <user/lib/timing.h>
 #include <user/main.h>

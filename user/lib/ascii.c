@@ -1,8 +1,8 @@
 #define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "ASCII Conversion"
 
+#include <user/lib/ascii.h>
 #include <user/lib/assertions.h>
-#include <user/lib/character_types.h>
 
 bool is_ascii_decimal_digit(char ch) { return ch >= '0' && ch <= '9'; }
 

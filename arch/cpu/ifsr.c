@@ -2,7 +2,8 @@
 #define LOG_LABEL "IFSR"
 
 #include <arch/cpu/ifsr.h>
-#include <lib/assertions.h>
+// FIXME: gleiches Problem wie bei dfsr.c
+#include <kernel/lib/kassertions.h>
 
 const char *get_prefetch_abort_error_type(uint32_t ifsr) {
   switch ((ifsr & ifsr_FS4) << 4 | (ifsr & ifsr_FS0_3)) {

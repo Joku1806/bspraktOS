@@ -2,7 +2,9 @@
 #define LOG_LABEL "DFSR"
 
 #include <arch/cpu/dfsr.h>
-#include <lib/assertions.h>
+// FIXME: Sollte nicht VERIFY_NOT_REACHED() benutzen, sondern stattdessen
+// -K_EINVAL zurückgeben.
+#include <kernel/lib/kassertions.h>
 
 const char *get_data_abort_error_type(uint32_t dfsr) {
   switch (dfsr & dfsr_status) {

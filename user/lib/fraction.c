@@ -5,7 +5,7 @@
 #include <limits.h>
 #include <user/lib/assertions.h>
 #include <user/lib/debug.h>
-#include <user/lib/error_codes.h>
+#include <user/lib/error.h>
 #include <user/lib/fraction.h>
 #include <user/lib/math.h>
 

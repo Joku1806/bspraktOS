@@ -45,7 +45,7 @@
 BIN_LSG = 
 
 # Hier eure source files hinzufügen
-SRC = $(shell find arch kernel lib -name '*.[cS]')
+SRC = $(shell find arch kernel -name '*.[cS]')
 
 # Hier separate user files hinzufügen
 USRC = $(shell find user -name '*.[cS]')

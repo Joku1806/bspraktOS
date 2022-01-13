@@ -1,5 +1,5 @@
 #include <config.h>
-#include <kernel/kprintf.h> // Platzahlter für die Headerdatei, die euer kprintf enthält
+#include <kernel/lib/kprintf.h> // Platzahlter für die Headerdatei, die euer kprintf enthält
 
 void _check_return_jump(void);
 void _check_registers(void);
@@ -8,7 +8,8 @@ void _check_spsr(void);
 
 void register_checker(void) {
   unsigned int cpsr;
-  asm("mrs %0, cpsr" : "=r"(cpsr));
+  asm("mrs %0, cpsr"
+      : "=r"(cpsr));
   cpsr &= 0x1f;
 
   kprintf("\nBitte sicherstellen, dass waehrend der Tests Interrupts in "
