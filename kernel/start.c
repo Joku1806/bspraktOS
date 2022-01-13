@@ -60,15 +60,16 @@ void print_menu() {
           "c: (Thread) Registerchecker ausführen\n\n");
 }
 
-void kernel_init() {
+void start_kernel() {
   systimer_reset();
   pl001_setup();
-}
-
-void user_init() {
+  scheduler_initialise();
   print_menu();
+
 #if LOG_COLORED_OUTPUT
   preview_module_colors();
 #endif
-  sys$create_thread(main, NULL, 0);
+
+  enable_peripheral_interrupts();
+  halt_cpu();
 }

@@ -49,10 +49,8 @@ _bsprak:
   ldr sp, =USER_SYSTEM_SP
 
   bl _setup_ivt
-	/* Kernel Thread Bootstrap */
-  @ FIXME: Kann sein dass wir da noch includes oder andere Lösung brauchen, um das zu erkennen
-  bl scheduler_initialise
-  bl schedule_thread
+	bl start_kernel
+  
 .Lend:
 	WFI
 	b .Lend
