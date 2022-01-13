@@ -2,6 +2,6 @@
 #define USERTHREAD_H
 
 void printer(void *x);
-void main();
+void user_main();
 
 #endif
