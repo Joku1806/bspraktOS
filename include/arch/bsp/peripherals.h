@@ -6,7 +6,9 @@
 #ifdef __ASSEMBLER__
 
 #define ENABLE_IRQS_1_OFFSET 0x210
-#define TIMER1_ENABLE_FLAG 0x2
+#define TIMER1_ENABLE_FLAG 1 << 1
+#define TIMER3_ENABLE_FLAG 1 << 3
+
 #define ENABLE_IRQS_2_OFFSET 0x214
 #define UART_ENABLE_FLAG 1 << 25
 
@@ -28,11 +30,12 @@ typedef enum {
 } peripherals_register_offsets;
 
 typedef enum {
-  timer1_pending = 0x1 << 1,
+  systimer_pending = 1 << 1,
+  stalltimer_pending = 1 << 3,
 } IRQ1_pending_flags;
 
 typedef enum {
-  UART_pending = 0x1 << 25,
+  UART_pending = 1 << 25,
 } IRQ2_pending_flags;
 
 volatile uint32_t *peripherals_register(peripherals_register_offsets offset);
