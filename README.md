@@ -22,6 +22,7 @@ return type: void
 usage: stalls current thread for a given ammount of milliseconds
 arguments: unsigned int
 return type: void
+*CAUTION*: Bei sys$stall_thread(0) beendet man die zeitscheibe, und geht direkt and ende der ready list
 
 	5: sys$exit_thread()
 usage: exits the current thread
