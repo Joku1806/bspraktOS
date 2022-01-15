@@ -1,3 +1,4 @@
+#include "user/lib/error.h"
 #define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "Fraction"
 #define LOG_COLORED_OUTPUT false
@@ -111,14 +112,15 @@ k_fraction k_fraction_sub(k_fraction *a, k_fraction *b) {
   return k_fraction_add(a, &b_negative);
 }
 
-k_fraction k_fraction_multiply(k_fraction *a, k_fraction *b) {
+k_fraction k_fraction_multiply(k_fraction *a, k_fraction *b, int *error) {
   k_fraction a_cpy = *a;
   k_fraction b_cpy = *b;
   long num_mul = 0, denom_mul = 0;
   while (__builtin_mul_overflow(a_cpy.numerator, b_cpy.numerator, &num_mul) ||
          __builtin_mul_overflow(a_cpy.denominator, b_cpy.denominator, &denom_mul)) {
     if (!k_fraction_downcast_precision(&a_cpy) && !k_fraction_downcast_precision(&b_cpy)) {
-      kpanicln("Can't avoid overflow when computing %i/%i * %i/%i.", a_cpy.numerator, a_cpy.denominator, b_cpy.numerator, b_cpy.denominator);
+      *error = -K_EINVAL;
+      return *a;
     }
   }
 
@@ -168,7 +170,8 @@ k_fraction k_fraction_project_onto_range(k_fraction *a, k_fraction *min, k_fract
   VERIFY(!k_fraction_lt(max, min));
 
   k_fraction diff = k_fraction_sub(max, min);
-  k_fraction scaled = k_fraction_multiply(a, &diff);
+  // FIXME: Fehler weiterreichen
+  k_fraction scaled = k_fraction_multiply(a, &diff, &(int){0});
   k_fraction ret = k_fraction_add(&scaled, min);
   kdbgln("Projecting %i/%i onto [%i/%i, %i/%i] -> %i/%i", a->numerator, a->denominator, min->numerator, min->denominator, max->numerator, max->denominator, ret.numerator, ret.denominator);
   return ret;

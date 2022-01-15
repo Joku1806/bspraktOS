@@ -17,7 +17,8 @@ bool k_fraction_eq(k_fraction *a, k_fraction *b);
 
 k_fraction k_fraction_add(k_fraction *a, k_fraction *b);
 k_fraction k_fraction_sub(k_fraction *a, k_fraction *b);
-k_fraction k_fraction_multiply(k_fraction *a, k_fraction *b);
+k_fraction k_fraction_multiply(k_fraction *a, k_fraction *b, int *error);
+#define k_fraction_multiply_unchecked(a, b) k_fraction_multiply(a, b, &(int){0})
 
 k_fraction k_fraction_floor(k_fraction *a);
 k_fraction k_fraction_round(k_fraction *a);

@@ -29,8 +29,8 @@ k_fraction k_hue_to_rgb(k_fraction *p, k_fraction *q, k_fraction *t) {
 
   if (k_fraction_lt(t, &c1_6)) {
     k_fraction q_m_p = k_fraction_sub(q, p);
-    k_fraction q_m_p_m_6 = k_fraction_multiply(&q_m_p, &c6);
-    k_fraction q_m_p_m_6_m_t = k_fraction_multiply(&q_m_p_m_6, t);
+    k_fraction q_m_p_m_6 = k_fraction_multiply_unchecked(&q_m_p, &c6);
+    k_fraction q_m_p_m_6_m_t = k_fraction_multiply_unchecked(&q_m_p_m_6, t);
     return k_fraction_add(p, &q_m_p_m_6_m_t);
   }
 
@@ -41,8 +41,8 @@ k_fraction k_hue_to_rgb(k_fraction *p, k_fraction *q, k_fraction *t) {
   if (k_fraction_lt(t, &c2_3)) {
     k_fraction q_m_p = k_fraction_sub(q, p);
     k_fraction tt_m_t = k_fraction_sub(&c2_3, t);
-    k_fraction q_m_p_m_tt_m_t = k_fraction_multiply(&q_m_p, &tt_m_t);
-    k_fraction q_m_p_m_tt_m_t_m_6 = k_fraction_multiply(&q_m_p_m_tt_m_t, &c6);
+    k_fraction q_m_p_m_tt_m_t = k_fraction_multiply_unchecked(&q_m_p, &tt_m_t);
+    k_fraction q_m_p_m_tt_m_t_m_6 = k_fraction_multiply_unchecked(&q_m_p_m_tt_m_t, &c6);
     return k_fraction_add(p, &q_m_p_m_tt_m_t_m_6);
   }
 
@@ -74,14 +74,14 @@ k_rgb_color k_hsl_to_rgb(k_hsl_color *hsl) {
     k_fraction q;
     if (k_fraction_lt(&l, &c1_2)) {
       k_fraction s_p_1 = k_fraction_add(&s, &c1);
-      q = k_fraction_multiply(&l, &s_p_1);
+      q = k_fraction_multiply_unchecked(&l, &s_p_1);
     } else {
       k_fraction l_p_s = k_fraction_add(&l, &s);
-      k_fraction l_m_s = k_fraction_multiply(&l, &s);
+      k_fraction l_m_s = k_fraction_multiply_unchecked(&l, &s);
       q = k_fraction_sub(&l_p_s, &l_m_s);
     }
 
-    k_fraction l_m_2 = k_fraction_multiply(&l, &c2);
+    k_fraction l_m_2 = k_fraction_multiply_unchecked(&l, &c2);
     k_fraction p = k_fraction_sub(&l_m_2, &q);
 
     k_fraction h_p_ot = k_fraction_add(&h, &c1_3);
@@ -92,9 +92,9 @@ k_rgb_color k_hsl_to_rgb(k_hsl_color *hsl) {
     b = k_hue_to_rgb(&p, &q, &h_m_ot);
   }
 
-  r = k_fraction_multiply(&r, &c255);
-  g = k_fraction_multiply(&g, &c255);
-  b = k_fraction_multiply(&b, &c255);
+  r = k_fraction_multiply_unchecked(&r, &c255);
+  g = k_fraction_multiply_unchecked(&g, &c255);
+  b = k_fraction_multiply_unchecked(&b, &c255);
 
   r = k_fraction_round(&r);
   g = k_fraction_round(&g);
