@@ -7,8 +7,6 @@
 #include <user/lib/timing.h>
 
 void sleep_milliseconds(size_t ms) {
-  // FIXME: nachschauen ob 32bit auslangen oder ob man am besten die vollen
-  // 64bit benutzen sollte.
   uint32_t initial = sys$get_time();
   while (sys$get_time() < initial + ms) {}
 }

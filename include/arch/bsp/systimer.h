@@ -1,6 +1,7 @@
 #ifndef SYSTIMER_H
 #define SYSTIMER_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #define SYSTIMER_BASE (0x7E003000 - 0x3F000000)
@@ -19,9 +20,12 @@ typedef enum {
 } control_flags;
 
 volatile uint32_t *systimer_register(systimer_offsets offset);
+
+bool systimer_pending();
 void systimer_reset();
 uint32_t systimer_value();
 
+bool stalltimer_pending();
 void stalltimer_reset_pending_interrupt();
 int stalltimer_interrupt_at(uint32_t hz);
 

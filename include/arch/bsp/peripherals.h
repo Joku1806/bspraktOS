@@ -30,11 +30,6 @@ typedef enum {
 } peripherals_register_offsets;
 
 typedef enum {
-  systimer_pending = 1 << 1,
-  stalltimer_pending = 1 << 3,
-} IRQ1_pending_flags;
-
-typedef enum {
   UART_pending = 1 << 25,
 } IRQ2_pending_flags;
 

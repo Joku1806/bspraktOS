@@ -75,7 +75,6 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
         return 0;
       }
 
-      kdbgln("%ums -> %uhz", ms, converted);
       scheduler_ignore_thread_until_timer_match(calling_thread, converted);
       return 0;
     }

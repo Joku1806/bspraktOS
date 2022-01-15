@@ -85,22 +85,22 @@ void data_abort_interrupt_handler(registers *regs) {
 }
 
 void irq_interrupt_handler(registers *regs) {
-  if (*peripherals_register(IRQ_pending_1) & systimer_pending) {
-    kdbgln("System Time = %#010x, C3 = %#010x", systimer_value(), *systimer_register(C3));
+  if (stalltimer_pending()) {
+    scheduler_unblock_overdue_waiting_threads();
+  }
+
+  if (systimer_pending()) {
     scheduler_round_robin(regs);
     systimer_reset();
-  } else if (*peripherals_register(IRQ_pending_1) & stalltimer_pending) {
-    kdbgln("Got stalltimer interrupt!");
-    scheduler_unblock_overdue_waiting_threads();
-  } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
+  }
+
+  if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
 
     if (pl001_peek_newest() == 'S') {
       sys$exit_thread();
     }
   }
-
-  // scheduler_unblock_overdue_waiting_threads();
 
   while (scheduler_exists_input_waiting_thread() && pl001_has_unread_character()) {
     scheduler_unblock_first_input_waiting_thread(pl001_read());

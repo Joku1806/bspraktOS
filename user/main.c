@@ -2,7 +2,7 @@
 #define LOG_LABEL "Userthread"
 
 #define NUM_CALCULATION_CYCLES 20
-#define SLEEP_TIME_MS 1000
+#define SLEEP_TIME_MS 2000
 
 #include <config.h>
 #include <stddef.h>
