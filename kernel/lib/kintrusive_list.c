@@ -105,6 +105,28 @@ void k_append_node_to_list(k_node *list, k_node *n) {
   k_connect_nodes(list, n);
 }
 
+void k_insert_sorted(k_node *list, k_node *n, bool (*cmp)(k_node *, k_node *)) {
+  VERIFY(k_is_list_head(list));
+  VERIFY(k_is_list_node(n));
+
+  if (list->next == NULL) {
+    list->next = n;
+    return;
+  }
+
+  k_node *current = list->next;
+  while (cmp(current, n)) {
+    current = current->next;
+    if (current == k_get_first_node(list)) {
+      break;
+    }
+  }
+
+  current = current->previous;
+  k_connect_nodes(n, current->next);
+  k_connect_nodes(current, n);
+}
+
 void k_transfer_list_node(k_node *from, k_node *to, k_node *n) {
   k_remove_node_from_list(from, n);
   k_append_node_to_list(to, n);

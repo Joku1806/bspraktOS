@@ -17,6 +17,8 @@ k_node *k_get_first_node(k_node *list);
 k_node *k_get_last_node(k_node *list);
 void k_remove_node_from_list(k_node *list, k_node *n);
 void k_append_node_to_list(k_node *list, k_node *n);
+void k_insert_sorted(k_node *list, k_node *n, bool (*cmp)(k_node *, k_node *));
+
 void k_transfer_list_node(k_node *from, k_node *to, k_node *n);
 
 #endif
