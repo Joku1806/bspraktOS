@@ -2,30 +2,29 @@
 #define LOG_LABEL "Timing"
 
 #include <arch/bsp/systimer.h>
+#include <kernel/lib/kdebug.h>
+#include <kernel/lib/kfraction.h>
 #include <kernel/lib/ktiming.h>
 #include <stddef.h>
 
-size_t k_milliseconds_to_mhz(size_t ms) {
-  return ms * SYSTIMER_FREQUENCY_HZ / 1000;
-}
+size_t ktiming_milliseconds_to_hertz(size_t ms, int *error) {
+  k_fraction s = k_fraction_create(ms, 1000);
+  k_fraction freq = k_fraction_create(SYSTIMER_FREQUENCY_HZ, 1);
 
-void k_sleep_milliseconds(size_t ms) {
-  size_t initial = systimer_value();
-  while (systimer_value() < initial + k_milliseconds_to_mhz(ms)) {}
-}
-
-void k_sleep_mhz(size_t mhz) {
-  size_t initial = systimer_value();
-  while (systimer_value() < initial + mhz) {}
-}
-
-void k_sleep_macgyver(size_t instrs) {
-  for (volatile size_t i = 0; i < instrs; i++) {
-    asm volatile("" ::
-                     : "memory");
+  k_fraction hz = k_fraction_multiply(&s, &freq, error);
+  if (*error < 0) {
+    kwarnln("%ums can't be converted to systimer hertz units.", ms);
+    return 0;
   }
+
+  return k_fraction_to_whole_number(&hz);
 }
 
-size_t k_mhz_to_milliseconds(size_t mhz) {
-  return (1000 * mhz) / SYSTIMER_FREQUENCY_HZ;
+// ms = hz / freq * 1000
+size_t ktiming_hertz_to_milliseconds(size_t hz) {
+  k_fraction s = k_fraction_create(hz, SYSTIMER_FREQUENCY_HZ);
+  k_fraction thousand = k_fraction_create(1000, 1);
+  k_fraction ms = k_fraction_multiply(&s, &thousand, &(int){0});
+
+  return k_fraction_to_whole_number(&ms);
 }
