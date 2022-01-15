@@ -54,17 +54,26 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
       return 0;
     }
 
-    // FIXME: sleep(0) separat behandeln, nicht schlafen legen, nur ans Ende der ready-Liste
     case SYSCALL_STALL_THREAD_NO: {
       unsigned ms = regs->general[0];
-      // WICHTIG: Die Reihenfolge hier nicht ändern, ansonsten wird der
-      // Kontext vom aufrufenden Thread nicht gespeichert!
-      // FIXME: Sollte nicht von der Reihenfolge abhängig sein, vielleicht
-      // können wir den Threadkontext explizit sichern?
+
       tcb *calling_thread = scheduler_get_running_thread();
       scheduler_forced_round_robin(regs);
-      scheduler_ignore_thread_until_timer_match(calling_thread, systimer_value() + k_milliseconds_to_mhz(ms));
       systimer_reset();
+
+      if (ms == 0) {
+        return 0;
+      }
+
+      int error = 0;
+      size_t converted = ktiming_milliseconds_to_hertz(ms, &error);
+      if (error < 0) {
+        regs->general[0] = -K_EINVAL;
+        return 0;
+      }
+
+      kdbgln("%ums -> %uhz", ms, converted);
+      scheduler_ignore_thread_until_timer_match(calling_thread, converted);
       return 0;
     }
 

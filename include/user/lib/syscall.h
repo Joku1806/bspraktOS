@@ -25,7 +25,7 @@
 char sys$read_character();
 void sys$output_character(char ch);
 int sys$create_thread(void (*func)(void *), const void *args, unsigned int args_size);
-void sys$stall_thread(unsigned ms);
+int sys$stall_thread(unsigned ms);
 _Noreturn void sys$exit_thread();
 uint32_t sys$get_time();
 
