@@ -1,7 +1,8 @@
-#define LOG_LEVEL WARNING_LEVEL
+#define LOG_LEVEL DEBUG_LEVEL
 #define LOG_LABEL "Scheduler"
 
 #include <arch/bsp/stack_defines.h>
+#include <arch/bsp/systimer.h>
 #include <arch/cpu/mission_control.h>
 #include <arch/cpu/psr.h>
 #include <arch/cpu/registers.h>
@@ -13,6 +14,8 @@
 #include <kernel/scheduler.h>
 #include <stddef.h>
 #include <stdint.h>
+
+bool scheduler_stall_cmp(k_node *a, k_node *b);
 
 __attribute__((weak)) void user_main() {
   kpanicln("Could not link to real user_main().");
@@ -114,7 +117,7 @@ void scheduler_create_thread(void (*func)(void *), const void *args, unsigned in
 
   k_node *tnode = k_get_first_node(&finished_list);
   tcb *thread = (tcb *)tnode;
-  kdbgln("Assigning new task to thread %u.", get_thread_id(tnode));
+  kdbgln("Assigning new task to thread %u.", scheduler_get_thread_id(tnode));
 
   thread->regs.sp -= k_align8(args_size);
   k_memcpy(thread->regs.sp, args, args_size);
@@ -131,7 +134,7 @@ void scheduler_create_thread(void (*func)(void *), const void *args, unsigned in
 void scheduler_cleanup_thread() {
   k_node *me = k_get_first_node(&running_list);
 
-  kdbgln("Exiting from thread %u", get_thread_id(me));
+  kdbgln("Exiting from thread %u", scheduler_get_thread_id(me));
   scheduler_reset_thread_context(scheduler_get_thread_id(me));
   k_transfer_list_node(&running_list, &finished_list, me);
 }
@@ -142,8 +145,6 @@ bool scheduler_is_thread_available() {
 
 #if CONSTANTLY_VERIFY_THREAD_LIST_INTEGRITY
 void scheduler_verify_thread_list_integrity() {
-  kdbgln("Now checking list integrity.");
-
   VERIFY(&stall_waiting_list != &running_list && &stall_waiting_list != &ready_list && &stall_waiting_list != &input_waiting_list && &stall_waiting_list != &finished_list);
   VERIFY(&running_list != &ready_list && &running_list != &input_waiting_list && &running_list != &finished_list);
   VERIFY(&ready_list != &input_waiting_list && &ready_list != &finished_list);
@@ -158,7 +159,6 @@ void scheduler_verify_thread_list_integrity() {
 
   for (size_t i = 0; i < 5; i++) {
     if (k_is_list_empty(lists[i])) {
-      kdbgln("%s is empty, continuing...", get_list_name(lists[i]));
       continue;
     }
 
@@ -166,8 +166,6 @@ void scheduler_verify_thread_list_integrity() {
     k_node *current = start;
 
     do {
-      kdbgln("Now checking thread %u, currently part of %s.", ((tcb *)current)->id, list_names[i]);
-      kdbgln("%u <-> %u <-> %u", ((tcb *)current->previous)->id, ((tcb *)current)->id, ((tcb *)current->next)->id);
       VERIFY(k_is_list_node(current));
       VERIFY(current == current->previous->next);
       VERIFY(current == current->next->previous);
@@ -175,9 +173,22 @@ void scheduler_verify_thread_list_integrity() {
       checked[scheduler_get_thread_id(current)] = true;
       current = current->next;
     } while (current != start);
-  }
 
-  kdbgln("List is in a valid state. Congratulations!");
+    if (lists[i] != &stall_waiting_list) {
+      continue;
+    }
+
+    k_node *current_s = k_get_first_node(lists[i]);
+    k_node *last_s = k_get_last_node(lists[i]);
+
+    while (current_s != last_s) {
+      // VERIFY(((tcb *)current_s)->stall_until < systimer_value());
+      VERIFY(scheduler_stall_cmp(current_s, current_s->next));
+
+      kdbgln("Thread %p is waiting until %#010x, current time is %#010x", current_s, ((tcb *)current_s)->stall_until, systimer_value());
+      current_s = current_s->next;
+    }
+  }
 }
 #endif
 
@@ -191,14 +202,21 @@ void scheduler_ignore_thread_until_character_input(tcb *thread) {
   }
 }
 
+bool scheduler_stall_cmp(k_node *a, k_node *b) {
+  return ((tcb *)a)->stall_until <= ((tcb *)b)->stall_until;
+}
+
 void scheduler_ignore_thread_until_timer_match(tcb *thread, unsigned match) {
-  thread->stall_until = match;
-  // Wir gehen davon aus, dass vor dieser Funktion schedule_thread()
-  // aufgerufen wurde und thread deswegen jetzt in der ready Liste ist
-  if (k_is_list_empty(&stall_waiting_list)) {
-    k_transfer_list_node(&ready_list, &stall_waiting_list, (k_node *)thread);
-  } else {
-    k_transfer_list_node(&ready_list, k_get_last_node(&stall_waiting_list), (k_node *)thread);
+  k_remove_node_from_list(&ready_list, (k_node *)thread);
+
+  thread->stall_until = systimer_value() + match;
+  k_insert_sorted(&stall_waiting_list, (k_node *)thread, scheduler_stall_cmp);
+
+  if ((k_node *)thread == k_get_first_node(&stall_waiting_list) && scheduler_adjust_stall_timer() < 0) {
+    // FIXME: Falls Wert zu klein, wird er einfach in die ready Liste verschoben,
+    // sollte man in dem Fall einen Fehler zurückgeben?
+    kwarnln("Could not stall thread %u because systimer already passed interrupt time.", thread->id);
+    scheduler_unblock_overdue_waiting_threads();
   }
 }
 
@@ -221,27 +239,27 @@ void scheduler_unblock_first_input_waiting_thread(char ch) {
   }
 }
 
-// FIXME: Besser wenn wir dafür den zweiten Timer benutzen.
-void scheduler_unblock_stall_waiting_threads(unsigned current_time) {
+void scheduler_unblock_overdue_waiting_threads() {
+  while (scheduler_adjust_stall_timer() < 0) {
+    k_node *first = k_get_first_node(&stall_waiting_list);
+    kdbgln("Thread %u is overdue.", scheduler_get_thread_id(first));
+
+    if (k_is_list_empty(&ready_list)) {
+      k_transfer_list_node(&stall_waiting_list, &ready_list, first);
+    } else {
+      k_transfer_list_node(&stall_waiting_list, k_get_last_node(&ready_list), first);
+    }
+  }
+}
+
+int scheduler_adjust_stall_timer() {
   if (k_is_list_empty(&stall_waiting_list)) {
-    return;
+    stalltimer_reset_pending_interrupt();
+    return 0;
   }
 
-  k_node *current = k_get_first_node(&stall_waiting_list);
-  do {
-    tcb *thread = (tcb *)current;
-    k_node *tmp = current->next;
-
-    if (thread->stall_until <= current_time) {
-      if (k_is_list_empty(&ready_list)) {
-        k_transfer_list_node(&stall_waiting_list, &ready_list, current);
-      } else {
-        k_transfer_list_node(&stall_waiting_list, k_get_last_node(&ready_list), current);
-      }
-    }
-
-    current = tmp;
-  } while (!k_is_list_empty(&stall_waiting_list) && !k_is_first_node(&stall_waiting_list, current));
+  k_node *first = k_get_first_node(&stall_waiting_list);
+  return stalltimer_interrupt_at(((tcb *)first)->stall_until);
 }
 
 void scheduler_round_robin(registers *thread_regs) {
@@ -254,13 +272,13 @@ void scheduler_round_robin(registers *thread_regs) {
     k_append_node_to_list(&ready_list, scheduler_get_idle_thread());
   }
 
-  kdbgln("Now scheduling thread %u.", get_thread_id(get_first_node(&ready_list)));
+  kdbgln("Now scheduling thread %u.", scheduler_get_thread_id(k_get_first_node(&ready_list)));
   if (!k_is_list_empty(&running_list)) {
     k_node *running_thread = k_get_first_node(&running_list);
     k_remove_node_from_list(&running_list, running_thread);
 
     if (running_thread != scheduler_get_idle_thread()) {
-      kdbgln("Thread %u is not done yet, saving context.", get_thread_id(running_thread));
+      kdbgln("Thread %u is not done yet, saving context.", scheduler_get_thread_id(running_thread));
       k_append_node_to_list(k_get_last_node(&ready_list), running_thread);
       scheduler_save_thread_context((tcb *)running_thread, thread_regs);
     }
@@ -269,6 +287,10 @@ void scheduler_round_robin(registers *thread_regs) {
   k_node *next_thread = k_get_first_node(&ready_list);
   k_transfer_list_node(&ready_list, &running_list, next_thread);
   scheduler_switch_thread(thread_regs, (tcb *)next_thread);
+
+#if CONSTANTLY_VERIFY_THREAD_LIST_INTEGRITY
+  scheduler_verify_thread_list_integrity();
+#endif
 }
 
 void scheduler_forced_round_robin(registers *thread_regs) {
@@ -276,13 +298,13 @@ void scheduler_forced_round_robin(registers *thread_regs) {
     k_append_node_to_list(&ready_list, scheduler_get_idle_thread());
   }
 
-  kdbgln("Now scheduling thread %u.", get_thread_id(get_first_node(&ready_list)));
+  kdbgln("Now scheduling thread %u.", scheduler_get_thread_id(k_get_first_node(&ready_list)));
   if (!k_is_list_empty(&running_list)) {
     k_node *running_thread = k_get_first_node(&running_list);
     k_remove_node_from_list(&running_list, running_thread);
 
     if (running_thread != scheduler_get_idle_thread()) {
-      kdbgln("Thread %u is not done yet, saving context.", get_thread_id(running_thread));
+      kdbgln("Thread %u is not done yet, saving context.", scheduler_get_thread_id(running_thread));
       k_append_node_to_list(k_get_last_node(&ready_list), running_thread);
       scheduler_save_thread_context((tcb *)running_thread, thread_regs);
     }
@@ -291,4 +313,8 @@ void scheduler_forced_round_robin(registers *thread_regs) {
   k_node *next_thread = k_get_first_node(&ready_list);
   k_transfer_list_node(&ready_list, &running_list, next_thread);
   scheduler_switch_thread(thread_regs, (tcb *)next_thread);
+
+#if CONSTANTLY_VERIFY_THREAD_LIST_INTEGRITY
+  scheduler_verify_thread_list_integrity();
+#endif
 }

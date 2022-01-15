@@ -13,14 +13,7 @@
 
 #define CONSTANTLY_VERIFY_THREAD_LIST_INTEGRITY true
 #if CONSTANTLY_VERIFY_THREAD_LIST_INTEGRITY
-
 void scheduler_verify_thread_list_integrity();
-#define transfer_list_node(from, to, n)       \
-  do {                                        \
-    transfer_list_node(from, to, n);          \
-    scheduler_verify_thread_list_integrity(); \
-  } while (0)
-
 #endif
 
 typedef struct {
@@ -50,7 +43,9 @@ void scheduler_ignore_thread_until_timer_match(tcb *thread, unsigned match);
 
 bool scheduler_exists_input_waiting_thread();
 void scheduler_unblock_first_input_waiting_thread(char ch);
-void scheduler_unblock_stall_waiting_threads(unsigned current_time);
+void scheduler_unblock_overdue_waiting_threads();
+int scheduler_adjust_stall_timer();
+
 void scheduler_round_robin(registers *thread_regs);
 void scheduler_forced_round_robin(registers *thread_regs);
 

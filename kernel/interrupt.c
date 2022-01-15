@@ -1,4 +1,4 @@
-#define LOG_LEVEL WARNING_LEVEL
+#define LOG_LEVEL DEBUG_LEVEL
 #define LOG_LABEL "Interrupt"
 
 #include <arch/bsp/peripherals.h>
@@ -20,7 +20,10 @@
 #include <kernel/scheduler.h>
 #include <kernel/syscall_impl.h>
 #include <stdint.h>
-#include <user/main.h>
+
+__attribute__((weak)) void sys$exit_thread() {
+  kpanicln("Could not link to real sys$exit_thread().");
+}
 
 void reset_interrupt_handler(registers *regs) {
   dump_registers(reset, regs);
@@ -82,13 +85,22 @@ void data_abort_interrupt_handler(registers *regs) {
 }
 
 void irq_interrupt_handler(registers *regs) {
-  if (*peripherals_register(IRQ_pending_1) & timer1_pending) {
-    scheduler_unblock_stall_waiting_threads(systimer_value());
+  if (*peripherals_register(IRQ_pending_1) & systimer_pending) {
+    kdbgln("System Time = %#010x, C3 = %#010x", systimer_value(), *systimer_register(C3));
     scheduler_round_robin(regs);
     systimer_reset();
+  } else if (*peripherals_register(IRQ_pending_1) & stalltimer_pending) {
+    kdbgln("Got stalltimer interrupt!");
+    scheduler_unblock_overdue_waiting_threads();
   } else if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
+
+    if (pl001_peek_newest() == 'S') {
+      sys$exit_thread();
+    }
   }
+
+  // scheduler_unblock_overdue_waiting_threads();
 
   while (scheduler_exists_input_waiting_thread() && pl001_has_unread_character()) {
     scheduler_unblock_first_input_waiting_thread(pl001_read());
