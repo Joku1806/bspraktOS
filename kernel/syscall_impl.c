@@ -1,5 +1,6 @@
 #include <arch/bsp/pl001.h>
 #include <arch/bsp/systimer.h>
+#include <kernel/lib/kdebug.h>
 #include <kernel/lib/kerror.h>
 #include <kernel/lib/ktiming.h>
 #include <kernel/scheduler.h>
@@ -15,7 +16,8 @@ bool is_valid_syscall_no(uint32_t syscall_no) {
          syscall_no == SYSCALL_OUTPUT_CHARACTER_NO ||
          syscall_no == SYSCALL_CREATE_THREAD_NO ||
          syscall_no == SYSCALL_STALL_THREAD_NO ||
-         syscall_no == SYSCALL_EXIT_THREAD_NO;
+         syscall_no == SYSCALL_EXIT_THREAD_NO ||
+         syscall_no == SYSCALL_GET_TIME_NO;
 }
 
 bool is_valid_syscall(void *instruction_address) {
@@ -31,6 +33,7 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
     case SYSCALL_READ_CHARACTER_NO: {
       tcb *calling_thread = scheduler_get_running_thread();
       scheduler_forced_round_robin(regs);
+      systimer_reset();
       scheduler_ignore_thread_until_character_input(calling_thread);
       return 0;
     }
@@ -85,7 +88,7 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
     }
 
     case SYSCALL_GET_TIME_NO: {
-      regs->general[0] = systimer_value();
+      regs->general[0] = ktiming_hertz_to_milliseconds(systimer_value());
       return 0;
     }
   }
