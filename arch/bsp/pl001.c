@@ -27,6 +27,12 @@ bool pl001_has_unread_character() {
   return !k_ringbuffer_empty(&cache);
 }
 
+char pl001_peek_newest() {
+  char ch;
+  VERIFY(k_ringbuffer_peek_newest(&cache, &ch, 1) == 1);
+  return ch;
+}
+
 char pl001_read() {
   char ch;
   VERIFY(k_ringbuffer_read(&cache, &ch, 1) == 1);

@@ -59,6 +59,18 @@ bool k_ringbuffer_full(k_ringbuffer *r) {
   return k_ringbuffer_unused(r) == 0;
 }
 
+size_t k_ringbuffer_peek_newest(k_ringbuffer *r, void *dst, size_t length) {
+  size_t cap = k_ringbuffer_used(r);
+
+  if (length > cap) {
+    length = cap;
+  }
+
+  kdbgln("Peeking %u characters from ringbuffer %p.", length, r);
+  k_ringbuffer_read_with_offset(r, dst, length, r->write_index - length);
+  return length;
+}
+
 size_t k_ringbuffer_read(k_ringbuffer *r, void *dst, size_t length) {
   size_t cap = k_ringbuffer_used(r);
 

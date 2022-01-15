@@ -38,6 +38,7 @@ typedef enum {
 void pl001_receive();
 void pl001_send(char ch);
 bool pl001_has_unread_character();
+char pl001_peek_newest();
 char pl001_read();
 void pl001_setup();
 
