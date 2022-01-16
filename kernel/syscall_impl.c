@@ -1,7 +1,6 @@
 #include <arch/bsp/pl001.h>
 #include <arch/bsp/stack_defines.h>
 #include <arch/bsp/systimer.h>
-#include <kernel/lib/kdebug.h>
 #include <kernel/lib/kerror.h>
 #include <kernel/lib/ktiming.h>
 #include <kernel/scheduler.h>
@@ -70,6 +69,7 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
       scheduler_forced_round_robin(regs);
       systimer_reset();
 
+      // FIXME: Eigentlich unnötig, da das mit zu kleinen Werten automatisch passiert.
       if (ms == 0) {
         return 0;
       }

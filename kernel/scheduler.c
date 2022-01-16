@@ -150,7 +150,6 @@ void scheduler_verify_thread_list_integrity() {
   VERIFY(&ready_list != &input_waiting_list && &ready_list != &finished_list);
   VERIFY(&input_waiting_list != &finished_list);
 
-  char *list_names[5] = {"running list", "ready list", "waiting list (input)", "waiting list (stall)", "finished list"};
   k_node *lists[5] = {&running_list, &ready_list, &input_waiting_list, &stall_waiting_list, &finished_list};
   bool checked[THREAD_COUNT];
   for (size_t i = 0; i < THREAD_COUNT; i++) {
@@ -182,10 +181,7 @@ void scheduler_verify_thread_list_integrity() {
     k_node *last_s = k_get_last_node(lists[i]);
 
     while (current_s != last_s) {
-      // VERIFY(((tcb *)current_s)->stall_until < systimer_value());
       VERIFY(scheduler_stall_cmp(current_s, current_s->next));
-
-      kdbgln("Thread %p is waiting until %#010x, current time is %#010x", current_s, ((tcb *)current_s)->stall_until, systimer_value());
       current_s = current_s->next;
     }
   }
