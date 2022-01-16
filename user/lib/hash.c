@@ -41,6 +41,9 @@ unsigned hash_jen(void *key, unsigned keylen, unsigned seed) {
   }
 
   hashv += (unsigned)(keylen);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
   switch (_hj_k) {
     case 11:
       hashv += ((unsigned)_hj_key[10] << 24);
@@ -66,6 +69,7 @@ unsigned hash_jen(void *key, unsigned keylen, unsigned seed) {
       _hj_i += _hj_key[0];
     default:;
   }
+#pragma GCC diagnostic pop
 
   HASH_JEN_MIX(_hj_i, _hj_j, hashv);
   return hashv;

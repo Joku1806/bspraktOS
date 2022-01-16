@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <user/lib/printf.h>
+#include <user/lib/syscall.h>
 
 #define PANIC_LEVEL 0
 #define WARNING_LEVEL 1
@@ -38,8 +39,13 @@
 static const rgb_color debug_warning_color = {.red = 249, .green = 115, .blue = 31};
 static const rgb_color debug_panic_color = {.red = 236, .green = 55, .blue = 19};
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+
 static rgb_color module_color;
 static bool initialised_module_color = false;
+
+#pragma GCC diagnostic pop
 
 #define HUE_SEED 0xf9136546
 #define SATURATION_SEED 0x70b5bb43
