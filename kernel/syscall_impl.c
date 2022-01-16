@@ -1,4 +1,5 @@
 #include <arch/bsp/pl001.h>
+#include <arch/bsp/stack_defines.h>
 #include <arch/bsp/systimer.h>
 #include <kernel/lib/kdebug.h>
 #include <kernel/lib/kerror.h>
@@ -47,6 +48,11 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
       void *func = (void *)regs->general[0];
       void *args = (void *)regs->general[1];
       unsigned int args_size = regs->general[2];
+
+      if (args_size > STACK_SIZE) {
+        regs->general[0] = -K_EINVAL;
+        return 0;
+      }
 
       if (!scheduler_is_thread_available()) {
         regs->general[0] = -K_EBUSY;
