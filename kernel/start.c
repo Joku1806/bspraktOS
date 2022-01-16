@@ -29,7 +29,7 @@ void preview_module_colors() {
       "Timing",
       "Userthread"};
 
-  kprintf("Previewing Module Colors\n");
+  kprintf("Previewing Module Colors (WIP)\n");
   for (size_t i = 0; i < sizeof(modules) / sizeof(const char *); i++) {
     long hue_hash = k_clamp_unsigned(k_hash_string_with_seed(modules[i], HUE_SEED), 0, LONG_MAX);
     long saturation_hash = k_clamp_unsigned(k_hash_string_with_seed(modules[i], SATURATION_SEED), 0, LONG_MAX);
@@ -42,34 +42,28 @@ void preview_module_colors() {
     k_rgb_color module_color = k_hsl_to_rgb(&hsl);
     kprintf("hsl(%3u°, %3u%%, %3u%%) -> \033[38;2;%u;%u;%um%s\033[0m\n", hsl.hue, hsl.saturation, hsl.lightness, module_color.red, module_color.green, module_color.blue, modules[i]);
   }
+  kprintf("\n");
 }
 #endif
 
 void print_menu() {
   kprintf("Willkommen in unserem Betriebssystem!\n"
-          "Interrupts ==========================\n"
-          "a: (Thread) Data Abort auslösen\n"
-          "p: (Thread) Prefetch Abort auslösen\n"
-          "s: (Thread) Software Interrupt auslösen\n"
-          "u: (Thread) Undefined Instruction auslösen\n"
-          "A: (System) Data Abort auslösen\n"
-          "P: (System) Prefetch Abort auslösen\n"
-          "S: (System) Software Interrupt auslösen\n"
-          "U: (System) Undefined Instruction auslösen\n"
-          "Debughilfen =========================\n"
-          "c: (Thread) Registerchecker ausführen\n\n");
+          "s: (Thread) Crash auslösen\n"
+          "S: (Kernel) Crash auslösen\n"
+          "Kleinbuchstaben: (Thread) Zeichen mit kleinen nicht-blockierenden Pausen ausgeben\n"
+          "Großbuchstaben: (Thread) Zeichen mit kleinen blockierenden Pausen ausgeben\n\n");
 }
 
 void start_kernel() {
-  systimer_reset();
   pl001_setup();
   scheduler_initialise();
-  print_menu();
 
 #if LOG_COLORED_OUTPUT
   preview_module_colors();
 #endif
+  print_menu();
 
   enable_peripheral_interrupts();
+  systimer_reset();
   halt_cpu();
 }
