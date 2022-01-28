@@ -5,6 +5,7 @@
 #include <arch/bsp/pl001.h>
 #include <arch/bsp/systimer.h>
 #include <arch/cpu/mission_control.h>
+#include <arch/cpu/mmu.h>
 #include <config.h>
 #include <kernel/lib/kdebug.h>
 #include <kernel/lib/kmath.h>
@@ -14,7 +15,6 @@
 #include <kernel/scheduler.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <user/main.h>
 
 #if LOG_COLORED_OUTPUT
 void preview_module_colors() {
@@ -56,6 +56,9 @@ void print_menu() {
 
 void start_kernel() {
   pl001_setup();
+
+  mmu_configure();
+
   scheduler_initialise();
 
 #if LOG_COLORED_OUTPUT
