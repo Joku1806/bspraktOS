@@ -10,9 +10,11 @@
 l1_entry get_l1_full_access_entry();
 void initialise_l1_table();
 
-__attribute__((aligned(0x4000))) static l1_entry l1_table[L1_TABLE_SIZE];
+__attribute__((aligned(L1_TABLE_SIZE * sizeof(l1_entry)))) static l1_entry l1_table[L1_TABLE_SIZE];
 
 l1_entry get_l1_full_access_entry(uint32_t physical_base) {
+  VERIFY(physical_base <= 0xfff);
+
   l1_entry ret = {
       .packed = 0,
   };
@@ -87,17 +89,22 @@ uint32_t SCTRL_activate_mmu(uint32_t SCTRL) {
 void mmu_configure() {
   initialise_l1_table();
 
-  uint32_t DACR, TTBCR, SCTRL;
+  uint32_t DACR, TTBCR, SCTLR;
   asm volatile(
       "mrc p15, 0, %0, c3, c0, 0 \n\t"
       "mrc p15, 0, %1, c2, c0, 0 \n\t"
       "mrc p15, 0, %2, c1, c0, 0 \n\t"
-      : "=r"(DACR), "=r"(TTBCR), "=r"(SCTRL));
+      : "=r"(DACR), "=r"(TTBCR), "=r"(SCTLR));
+
+  kdbgln("L1 Tabelle @ %p", l1_table);
+  kdbgln("Nach Auslesen: DACR = %#010x, TTBCR = %#010x, SCTLR = %#010x", DACR, TTBCR, SCTLR);
 
   DACR = DACR_set_domain(DACR, 0, client);
   TTBCR = TTBCR_set_translation_table_format(TTBCR, ttf_short);
-  SCTRL = SCTRL_deactivate_caches(SCTRL);
-  SCTRL = SCTRL_activate_mmu(SCTRL);
+  SCTLR = SCTRL_deactivate_caches(SCTLR);
+  SCTLR = SCTRL_activate_mmu(SCTLR);
+
+  kdbgln("Nach Konfigurieren: DACR = %#010x, TTBCR = %#010x, SCTLR = %#010x", DACR, TTBCR, SCTLR);
 
   asm volatile(
       // Adresse von L1 Tabelle an MMU übergeben (TTBR0)
@@ -108,5 +115,5 @@ void mmu_configure() {
       "mcr p15, 0, %2, c2, c0, 0 \n\t"
       // Instruction und Data Caches deaktivieren, MMU anschalten (SCTLR, Bits C/I/M)
       "mcr p15, 0, %3, c1, c0, 0 \n\t" ::"r"(&l1_table[0]),
-      "r"(DACR), "r"(TTBCR), "r"(SCTRL));
+      "r"(DACR), "r"(TTBCR), "r"(SCTLR));
 }
