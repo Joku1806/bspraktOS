@@ -85,6 +85,56 @@ typedef union {
   uint32_t packed;
 } l1_entry;
 
+typedef enum {
+  no_access = 0b00,
+  client = 0b01,
+  manager = 0b11,
+} domain_mode;
+
+typedef enum {
+  ttf_short = 0b0,
+  ttf_long = 0b1,
+} ttf;
+
+typedef enum {
+  MMU_enable = 0,
+  cache_enable = 2,
+  instruction_cache_enable = 12,
+} SCTRL_bit_offset;
+
+typedef enum {
+  KREAD = 1 << 2,
+  KWRITE = 1 << 1,
+  KEXEC = 1 << 0,
+  KNONE = 0,
+} kpermissions;
+
+typedef enum {
+  UREAD = 1 << 2,
+  UWRITE = 1 << 1,
+  UEXEC = 1 << 0,
+  UNONE = 0,
+} upermissions;
+
+typedef enum {
+  KiB = 1024,
+  MiB = 1024 * 1024,
+} memory_sizes;
+
+#define COMBINE_PERMISSIONS(kp, up) \
+  ((kp) & ~KEXEC) << 3 | ((up) & ~UEXEC)
+
+uint32_t DACR_set_domain(uint32_t DACR, uint8_t domain, domain_mode mode);
+uint32_t TTBCR_set_translation_table_format(uint32_t TTBCR, ttf format);
+uint32_t SCTRL_deactivate_caches(uint32_t SCTRL);
+uint32_t SCTRL_activate_mmu(uint32_t SCTRL);
+
+uint8_t get_AP_bits(kpermissions kp, upermissions up);
+l1_section get_l1_section(uint32_t physical_base, kpermissions kp, upermissions up);
+l1_fault get_l1_guard_page();
+l2_small_page get_l2_small_page(uint32_t physical_base, kpermissions kp, upermissions up);
+l2_fault get_l2_guard_page();
+
 void mmu_configure();
 
 #endif

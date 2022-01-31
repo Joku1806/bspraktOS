@@ -7,49 +7,58 @@
 #include <stddef.h>
 #include <stdint.h>
 
-l1_entry get_l1_full_access_entry();
-void initialise_l1_table();
-
 __attribute__((aligned(L1_TABLE_SIZE * sizeof(l1_entry)))) static l1_entry l1_table[L1_TABLE_SIZE];
 
-l1_entry get_l1_full_access_entry(uint32_t physical_base) {
-  VERIFY(physical_base <= 0xfff);
+// .init/.text - Kernel: R-X, User: ---, L1
+// .data - Kernel: RW?, User: ---, L1
+// .rodata - Kernel: R--, User: ---, L1
+// .utext - Kernel: RW-, User: R-X, L1
+// .udata - Kernel: RW-, User: RW-, L1
+// .urodata - Kernel: R--, User: R--, L1
+// User Stack - Kernel: RW-, User: RW-, L2
+// Interrupt Stack - Kernel: RW-, User: ---, L2
+// Guard Page: Fault, L2
 
-  l1_entry ret = {
-      .packed = 0,
-  };
-
-  ret.section.base_address = physical_base;
-  ret.section.AP1_0 = 0b11;
-  ret.section.pad1_set = 1;
-
-  return ret;
-}
-
-l1_entry get_l1_fault_entry() {
-  l1_entry ret = {
-      .fault = {
-          .unused = 0,
-          .l1_entry_type_fault = 0b00,
-      }};
-
-  return ret;
-}
-
-void initialise_l1_table() {
-  for (size_t i = 0; i < L1_TABLE_SIZE; i++) {
-    l1_table[i] = get_l1_full_access_entry(i);
+#ifdef EXPERIMENTAL
+void initialise_l1_table_complete() {
+  // QEMU Bereich
+  for (size_t i = 0; i < 8; i++) {
+    l2_tables[0][i] = get_l2_guard_page();
   }
 
-  kdbgln("--- l1_table[1]\npacked = %#010x\nbase = %#010x\npermissions = %#03b\n",
-         l1_table[1].packed, l1_table[1].section.base_address, l1_table[1].section.AP2 << 2 | l1_table[1].section.AP1_0);
-}
+  // FIXME: Kernel Zeug muss in anderen Bereich verschoben werden,
+  // weil wir PXN für den 1. MiB für die User Sektionen setzen müssen
+  // .init/.text
+  for (size_t i = 8; i < 32; i++) {
+    l2_tables[0][i] = get_l2_page(KREAD | KEXEC, UNONE);
+  }
 
-typedef enum {
-  no_access = 0b00,
-  client = 0b01,
-  manager = 0b11,
-} domain_mode;
+  // .rodata
+  for (size_t i = 32; i < 80; i++) {
+    l2_tables[0][i] = get_l2_page(KREAD, UNONE);
+  }
+
+  // .data
+  for (size_t i = 80; i < 128; i++) {
+    l2_tables[0][i] = get_l2_page(KREAD | KWRITE, UNONE);
+  }
+
+  // .utext
+  for (size_t i = 128; i < 144; i++) {
+    l2_tables[0][i] = get_l2_page(KREAD | KWRITE, UREAD | UEXEC);
+  }
+
+  // .urodata
+  for (size_t i = 144; i < 192; i++) {
+    l2_tables[0][i] = get_l2_page(KREAD, UREAD);
+  }
+
+  // .udata
+  for (size_t i = 192; i < 256; i++) {
+    l2_tables[0][i] = get_l2_page(KREAD | KWRITE, UREAD | UWRITE);
+  }
+}
+#endif
 
 uint32_t DACR_set_domain(uint32_t DACR, uint8_t domain, domain_mode mode) {
   VERIFY(domain <= 15);
@@ -60,11 +69,6 @@ uint32_t DACR_set_domain(uint32_t DACR, uint8_t domain, domain_mode mode) {
   return DACR;
 }
 
-typedef enum {
-  ttf_short = 0b0,
-  ttf_long = 0b1,
-} ttf;
-
 uint32_t TTBCR_set_translation_table_format(uint32_t TTBCR, ttf format) {
   TTBCR &= ~(1 << 31);
   TTBCR |= format << 31;
@@ -72,18 +76,94 @@ uint32_t TTBCR_set_translation_table_format(uint32_t TTBCR, ttf format) {
   return TTBCR;
 }
 
-typedef enum {
-  MMU_enable = 0,
-  cache_enable = 2,
-  instruction_cache_enable = 12,
-} SCTRL_bit_offset;
-
 uint32_t SCTRL_deactivate_caches(uint32_t SCTRL) {
   return SCTRL & ~(1 << cache_enable | 1 << instruction_cache_enable);
 }
 
 uint32_t SCTRL_activate_mmu(uint32_t SCTRL) {
   return SCTRL | 1 << MMU_enable;
+}
+
+uint8_t get_AP_bits(kpermissions kp, upermissions up) {
+  switch (COMBINE_PERMISSIONS(kp, up)) {
+    case COMBINE_PERMISSIONS(KNONE, UNONE):
+      return 0b000;
+    case COMBINE_PERMISSIONS(KREAD | KWRITE, UNONE):
+      return 0b001;
+    case COMBINE_PERMISSIONS(KREAD, UNONE):
+      return 0b101;
+    case COMBINE_PERMISSIONS(KREAD, UREAD):
+      return 0b111;
+    case COMBINE_PERMISSIONS(KREAD | KWRITE, UREAD):
+      return 0b010;
+    case COMBINE_PERMISSIONS(KREAD | KWRITE, UREAD | UWRITE):
+      return 0b011;
+    default:
+      VERIFY_NOT_REACHED();
+  }
+}
+
+l1_section get_l1_section(uint32_t physical_base, kpermissions kp, upermissions up) {
+  VERIFY(physical_base % MiB == 0);
+
+  l1_section ret = {0};
+
+  ret.base_address = physical_base / MiB;
+  ret.pad1_set = 1;
+
+  if (!(kp & KEXEC)) {
+    ret.PXN = 1;
+  }
+
+  if (!(up & UEXEC)) {
+    ret.XN = 1;
+  }
+
+  uint8_t AP = get_AP_bits(kp, up);
+  ret.AP2 = (AP & 0b100) >> 2;
+  ret.AP1_0 = (AP & 0b011);
+
+  return ret;
+}
+
+l1_fault get_l1_guard_page() {
+  l1_fault guard = {0};
+  return guard;
+}
+
+l2_small_page get_l2_small_page(uint32_t physical_base, kpermissions kp, upermissions up) {
+  VERIFY(physical_base % (4 * KiB) == 0);
+
+  l2_small_page ret = {0};
+
+  ret.base_address = physical_base / (4 * KiB);
+  ret.pad0_set = 1;
+
+  // Wichtig: PXN wird im l2 Handle gesetzt
+
+  if (~(up & UEXEC)) {
+    ret.XN = 1;
+  }
+
+  uint8_t AP = get_AP_bits(kp, up);
+  ret.AP2 = (AP & 0b100) >> 2;
+  ret.AP1_0 = (AP & 0b011);
+
+  return ret;
+}
+
+l2_fault get_l2_guard_page() {
+  l2_fault guard = {0};
+  return guard;
+}
+
+void initialise_l1_table() {
+  for (size_t i = 0; i < L1_TABLE_SIZE; i++) {
+    l1_table[i].section = get_l1_section(i * MiB, KREAD | KWRITE | KEXEC, UREAD | UWRITE | UEXEC);
+  }
+
+  kdbgln("--- l1_table[1]\npacked = %#010x\nbase = %#010x\npermissions = %#03b\n",
+         l1_table[1].packed, l1_table[1].section.base_address, l1_table[1].section.AP2 << 2 | l1_table[1].section.AP1_0);
 }
 
 void mmu_configure() {
