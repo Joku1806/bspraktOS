@@ -97,8 +97,23 @@ void irq_interrupt_handler(registers *regs) {
   if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
 
-    if (pl001_peek_newest() == 'S') {
-      sys$exit_thread();
+    volatile unsigned dummy;
+    switch (pl001_peek_newest()) {
+      case 'N':
+        dummy = *(volatile unsigned *)0;
+        break;
+      case 'P':
+        asm volatile("mov pc, #0");
+        break;
+      case 'C':
+        *(volatile unsigned *)0x00010000 = 0x1337;
+        break;
+      case 'U':
+        dummy = *(volatile unsigned *)0x8100000;
+        break;
+      case 'X':
+        asm volatile("mov pc, #0x00080000");
+        break;
     }
   }
 
