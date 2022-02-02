@@ -6,7 +6,8 @@
 #define L1_TABLE_SIZE 0x1000
 
 typedef struct __attribute__((__packed__)) {
-  uint32_t l1_entry_type_fault : 2;
+  uint32_t pad1_unset : 1;
+  uint32_t pad0_unset : 1;
   uint32_t unused : 30;
 } l1_fault;
 
@@ -115,11 +116,6 @@ typedef enum {
   UEXEC = 1 << 0,
   UNONE = 0,
 } upermissions;
-
-typedef enum {
-  KiB = 1024,
-  MiB = 1024 * 1024,
-} memory_sizes;
 
 #define COMBINE_PERMISSIONS(kp, up) \
   ((kp) & ~KEXEC) << 3 | ((up) & ~UEXEC)
