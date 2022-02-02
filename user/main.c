@@ -47,7 +47,7 @@ void printer(void *x) {
       *(volatile unsigned *)(&x + 0x00200000) = 0x1337;
       break;
     case 'u':
-      // FIXME: Ist das richtig oder soll man zB auf MiB 129 zugreifen?
+      // FIXME: heißt Zugriff auf Adresse > 128 MiB
       dummy = *(volatile unsigned *)(&x + 0x00200000);
       break;
     case 'x':
