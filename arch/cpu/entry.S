@@ -1,4 +1,4 @@
-#include <arch/bsp/stack_defines.h>
+#include <arch/bsp/memory_map.h>
 #include <arch/cpu/psr.h>
 
 .section .init

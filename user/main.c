@@ -4,8 +4,8 @@
 #define NUM_CALCULATION_CYCLES 20
 #define SLEEP_TIME_MS 2000
 
+#include <arch/bsp/memory_map.h>
 #include <arch/bsp/pl001.h>
-#include <arch/bsp/stack_defines.h>
 #include <config.h>
 #include <stddef.h>
 #include <stdint.h>

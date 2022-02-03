@@ -56,7 +56,6 @@ void print_menu() {
 
 void start_kernel() {
   pl001_setup();
-
   mmu_configure();
 
   scheduler_initialise();

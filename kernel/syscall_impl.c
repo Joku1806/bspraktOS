@@ -1,5 +1,5 @@
+#include <arch/bsp/memory_map.h>
 #include <arch/bsp/pl001.h>
-#include <arch/bsp/stack_defines.h>
 #include <arch/bsp/systimer.h>
 #include <kernel/lib/kerror.h>
 #include <kernel/lib/ktiming.h>

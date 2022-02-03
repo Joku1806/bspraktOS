@@ -1,7 +1,7 @@
 #define LOG_LEVEL WARNING_LEVEL
 #define LOG_LABEL "Scheduler"
 
-#include <arch/bsp/stack_defines.h>
+#include <arch/bsp/memory_map.h>
 #include <arch/bsp/systimer.h>
 #include <arch/cpu/mission_control.h>
 #include <arch/cpu/psr.h>
@@ -46,7 +46,7 @@ size_t scheduler_get_thread_id(k_node *n) {
 void scheduler_reset_thread_context(size_t index) {
   blocks[index].id = index;
   blocks[index].cpsr = psr_mode_user;
-  blocks[index].regs.sp = (void *)(THREAD_SP_BASE - index * STACK_SIZE);
+  blocks[index].regs.sp = (void *)(USER_STACK_TOP_ADDRESS - index * STACK_SIZE);
   blocks[index].regs.lr = sys$exit_thread;
   blocks[index].regs.pc = NULL;
 }
@@ -54,7 +54,7 @@ void scheduler_reset_thread_context(size_t index) {
 void scheduler_reset_idle_thread_context() {
   blocks[IDLE_THREAD_INDEX].id = IDLE_THREAD_INDEX;
   blocks[IDLE_THREAD_INDEX].cpsr = psr_mode_user;
-  blocks[IDLE_THREAD_INDEX].regs.sp = (void *)(THREAD_SP_BASE - IDLE_THREAD_INDEX * STACK_SIZE);
+  blocks[IDLE_THREAD_INDEX].regs.sp = (void *)(USER_STACK_TOP_ADDRESS - IDLE_THREAD_INDEX * STACK_SIZE);
   blocks[IDLE_THREAD_INDEX].regs.lr = halt_cpu;
   blocks[IDLE_THREAD_INDEX].regs.pc = halt_cpu;
 }
