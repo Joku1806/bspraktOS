@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define L1_TABLE_SIZE 0x1000
+#define L2_STACK_TABLE_SIZE 0x100
 
 typedef struct __attribute__((__packed__)) {
   uint32_t pad1_unset : 1;
@@ -130,6 +131,9 @@ l1_section get_l1_section(uint32_t physical_base, kpermissions kp, upermissions 
 l1_fault get_l1_guard_page();
 l2_small_page get_l2_small_page(uint32_t physical_base, kpermissions kp, upermissions up);
 l2_fault get_l2_guard_page();
+
+void l1_handle_set_table_address(l2_handle *handle, uint32_t table_address);
+l2_handle get_PXN_stack_handle(uint32_t l2_table_address);
 
 void mmu_configure();
 

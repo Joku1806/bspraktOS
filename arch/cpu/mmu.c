@@ -1,4 +1,4 @@
-#define LOG_LEVEL WARNING_LEVEL
+#define LOG_LEVEL DEBUG_LEVEL
 #define LOG_LABEL "MMU Setup"
 
 #include <arch/bsp/memory_map.h>
@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 __attribute__((aligned(L1_TABLE_SIZE * sizeof(l1_entry)))) static l1_entry l1_table[L1_TABLE_SIZE];
-
+__attribute__((aligned(L2_STACK_TABLE_SIZE * sizeof(l2_entry)))) static l2_entry l2_stack_tables[STACK_COUNT][L2_STACK_TABLE_SIZE];
 // .init/.text - Kernel: R-X, User: ---, L1
 // .data - Kernel: RW?, User: ---, L1
 // .rodata - Kernel: R--, User: ---, L1
@@ -27,6 +27,43 @@ bool l1_entry_is_section(l1_entry *e) {
 void l1_section_set_base_address(l1_section *s, uint32_t base_address) {
   VERIFY(base_address % MiB == 0);
   s->base_address = base_address / MiB;
+}
+
+void initialise_l2_stack_tables() {
+  for (size_t i = 0; i < USER_STACK_COUNT; i++) {
+    uint32_t current_stack_base = USER_STACK_BOTTOM_ADDRESS + i * STACK_SIZE;
+
+    l2_stack_tables[i][0].fault = get_l2_guard_page();
+    for (size_t j = 1; j < L2_STACK_TABLE_SIZE; j++) {
+      l2_stack_tables[i][j].small_page = get_l2_small_page(current_stack_base + j * 4 * KiB, KREAD | KWRITE, UREAD | UWRITE);
+    }
+  }
+
+  for (size_t i = 0; i < KERNEL_STACK_COUNT; i++) {
+    uint32_t current_stack_base = KERNEL_STACK_BOTTOM_ADDRESS + i * STACK_SIZE;
+
+    l2_stack_tables[USER_STACK_COUNT + i][0].fault = get_l2_guard_page();
+    for (size_t j = 1; j < L2_STACK_TABLE_SIZE; j++) {
+      l2_stack_tables[USER_STACK_COUNT + i][j].small_page = get_l2_small_page(current_stack_base + j * 4 * KiB, KREAD | KWRITE, UNONE);
+    }
+  }
+}
+
+typedef enum {
+  fault,
+  section,
+  handle,
+} l1_type;
+
+l1_type l1_entry_get_type(l1_entry *e) {
+  if (!e->fault.pad0_unset && !e->fault.pad1_unset)
+    return fault;
+  if (e->section.pad1_set && !e->section.pad0_unset)
+    return section;
+  if (e->handle.pad1_set && !e->handle.pad0_unset)
+    return handle;
+
+  VERIFY_NOT_REACHED();
 }
 
 void initialise_l1_table() {
@@ -61,21 +98,70 @@ void initialise_l1_table() {
       {.fault = get_l1_guard_page()},
       {.section = get_l1_section(MMIO_DEVICES_START_ADDRESS, KREAD | KWRITE, UNONE)},
       {.fault = get_l1_guard_page()},
-      {.handle = get_l2_handle(USER_STACK_BOTTOM_ADDRESS, KREAD | KWRITE, UREAD | UWRITE)},
-      {.handle = get_l2_handle(KERNEL_STACK_BOTTOM_ADDRESS, KREAD | KWRITE, UNONE)},
+      {.handle = get_PXN_stack_handle((uint32_t)l2_stack_tables[0])},
+      {.handle = get_PXN_stack_handle((uint32_t)l2_stack_tables[0])},
   };
 
   for (size_t i = 0; i < DISTINCT_SECTIONS_COUNT; i++) {
     l1_entry template = sections[i];
 
     for (size_t j = address_range_starts[i]; j < address_range_starts[i + 1]; j += MiB) {
-      if (l1_entry_is_section(&template)) {
-        l1_section_set_base_address(&(template.section), j);
-      }
+      switch (l1_entry_get_type(&template)) {
+        case fault:
+          break;
+        case section:
+          l1_section_set_base_address(&(template.section), j);
+          break;
+        case handle: {
+          size_t stack_index = (j - USER_STACK_BOTTOM_ADDRESS) / MiB;
+          // kdbgln("stack_index = %u", stack_index);
+          VERIFY(stack_index < STACK_COUNT);
+          l1_handle_set_table_address(&(template.handle), (uint32_t)l2_stack_tables[stack_index]);
+          break;
+        }
+      };
 
       l1_table[j / MiB] = template;
     }
   }
+}
+
+void print_l1_table() {
+  size_t block_counter = 0;
+
+  for (size_t i = 0; i < STACK_COUNT; i++) {
+    kdbgln("L2 Table %u @ %p", i, l2_stack_tables[i]);
+
+    // for (size_t j = 0; j < L2_STACK_TABLE_SIZE - 1; j++) {
+    //   if (l2_stack_tables[i][j].packed == l2_stack_tables[i][j + 1].packed) {
+    //     block_counter++;
+    //     continue;
+    //   }
+
+    //   if (block_counter == 0) {
+    //     kdbgln("l2_table[%u] = %#010x", j, l2_stack_tables[i][j]);
+    //   } else {
+    //     kdbgln("l2_table[%u-%u] = %#010x", j - block_counter, j, l2_stack_tables[i][j]);
+    //     block_counter = 0;
+    //   }
+    // }
+    // kdbgln("l2_table[%u] = %#010x", L2_STACK_TABLE_SIZE - 1, l2_stack_tables[i][L2_STACK_TABLE_SIZE - 1]);
+  }
+
+  for (size_t i = 0; i < L1_TABLE_SIZE - 1; i++) {
+    if (l1_table[i].packed == l1_table[i + 1].packed) {
+      block_counter++;
+      continue;
+    }
+
+    if (block_counter == 0) {
+      kdbgln("l1_table[%u] = %#010x", i, l1_table[i]);
+    } else {
+      kdbgln("l1_table[%u-%u] = %#010x", i - block_counter, i, l1_table[i]);
+      block_counter = 0;
+    }
+  }
+  kdbgln("l1_table[%u] = %#010x", L1_TABLE_SIZE - 1, l1_table[L1_TABLE_SIZE - 1]);
 }
 
 uint32_t DACR_set_domain(uint32_t DACR, uint8_t domain, domain_mode mode) {
@@ -121,6 +207,23 @@ uint8_t get_AP_bits(kpermissions kp, upermissions up) {
   }
 }
 
+// FIXME: soll es l1_handle oder l2_handle heißen?
+void l1_handle_set_table_address(l2_handle *handle, uint32_t table_address) {
+  VERIFY(table_address % KiB == 0);
+
+  handle->base_address = table_address;
+}
+
+l2_handle get_PXN_stack_handle(uint32_t l2_table_address) {
+  l2_handle ret = {0};
+  ret.pad1_set = 1;
+
+  ret.PXN = 1;
+  l1_handle_set_table_address(&ret, l2_table_address);
+
+  return ret;
+}
+
 l1_section get_l1_section(uint32_t physical_base, kpermissions kp, upermissions up) {
   l1_section ret = {0};
   ret.pad1_set = 1;
@@ -157,7 +260,7 @@ l2_small_page get_l2_small_page(uint32_t physical_base, kpermissions kp, upermis
 
   // Wichtig: PXN wird im l2 Handle gesetzt
 
-  if (~(up & UEXEC)) {
+  if (!(up & UEXEC)) {
     ret.XN = 1;
   }
 
@@ -174,17 +277,16 @@ l2_fault get_l2_guard_page() {
 }
 
 void mmu_configure() {
+  initialise_l2_stack_tables();
   initialise_l1_table();
+  print_l1_table();
 
-  uint32_t DACR, TTBCR, SCTLR, TTBR0;
+  uint32_t DACR, TTBCR, SCTLR;
   asm volatile(
       "mrc p15, 0, %0, c3, c0, 0 \n\t"
       "mrc p15, 0, %1, c2, c0, 2 \n\t"
       "mrc p15, 0, %2, c1, c0, 0 \n\t"
       : "=r"(DACR), "=r"(TTBCR), "=r"(SCTLR));
-
-  kdbgln("L1 Tabelle @ %p", l1_table);
-  kdbgln("Nach Auslesen: DACR = %#010x, TTBCR = %#010x, SCTLR = %#010x", DACR, TTBCR, SCTLR);
 
   DACR = DACR_set_domain(DACR, 0, client);
   TTBCR = TTBCR_set_translation_table_format(TTBCR, ttf_short);
@@ -201,14 +303,4 @@ void mmu_configure() {
       // Instruction und Data Caches deaktivieren, MMU anschalten (SCTLR, Bits C/I/M)
       "mcr p15, 0, %3, c1, c0, 0 \n\t" ::"r"(&l1_table[0]),
       "r"(DACR), "r"(TTBCR), "r"(SCTLR));
-
-  asm volatile(
-      "mrc p15, 0, %0, c2, c0, 0 \n\t"
-      "mrc p15, 0, %1, c3, c0, 0 \n\t"
-      "mrc p15, 0, %2, c2, c0, 2 \n\t"
-      "mrc p15, 0, %3, c1, c0, 0 \n\t"
-      ""
-      : "=r"(TTBR0), "=r"(DACR), "=r"(TTBCR), "=r"(SCTLR));
-
-  kdbgln("Nach Konfigurieren: DACR = %#010x, TTBCR = %#010x, SCTLR = %#010x", DACR, TTBCR, SCTLR);
 }
