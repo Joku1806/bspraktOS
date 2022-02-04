@@ -1,8 +1,7 @@
 #ifndef MEMORY_MAP_H
 #define MEMORY_MAP_H
 
-#define KiB (1024)
-#define MiB (KiB * KiB)
+#include <arch/bsp/memory_sizes.h>
 
 #define MEMORY_TOP_ADDRESS (128 * MiB)
 #define DISTINCT_SECTIONS_COUNT (14)
