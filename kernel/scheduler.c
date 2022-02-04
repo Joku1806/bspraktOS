@@ -53,8 +53,8 @@ void scheduler_reset_thread_context(size_t index) {
 
 void scheduler_reset_idle_thread_context() {
   blocks[IDLE_THREAD_INDEX].id = IDLE_THREAD_INDEX;
-  blocks[IDLE_THREAD_INDEX].cpsr = psr_mode_user;
-  blocks[IDLE_THREAD_INDEX].regs.sp = (void *)(USER_STACK_TOP_ADDRESS - IDLE_THREAD_INDEX * STACK_SIZE);
+  blocks[IDLE_THREAD_INDEX].cpsr = psr_mode_system;
+  blocks[IDLE_THREAD_INDEX].regs.sp = (void *)IDLE_THREAD_SP;
   blocks[IDLE_THREAD_INDEX].regs.lr = halt_cpu;
   blocks[IDLE_THREAD_INDEX].regs.pc = halt_cpu;
 }
