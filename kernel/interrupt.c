@@ -1,6 +1,7 @@
 #define LOG_LEVEL DEBUG_LEVEL
 #define LOG_LABEL "Interrupt"
 
+#include <arch/bsp/memory_map.h>
 #include <arch/bsp/peripherals.h>
 #include <arch/bsp/pl001.h>
 #include <arch/bsp/systimer.h>
@@ -100,19 +101,19 @@ void irq_interrupt_handler(registers *regs) {
     volatile unsigned dummy;
     switch (pl001_peek_newest()) {
       case 'N':
-        dummy = *(volatile unsigned *)0;
+        dummy = *(volatile unsigned *)NULL;
         break;
       case 'P':
-        asm volatile("mov pc, #0");
+        asm volatile("mov pc, %0" ::"I"(NULL));
         break;
       case 'C':
-        *(volatile unsigned *)0x00010000 = 0x1337;
+        *(volatile unsigned *)TEXT_SECTION_START_ADDRESS = 0x1337;
         break;
       case 'U':
-        dummy = *(volatile unsigned *)0x8100000;
+        dummy = *(volatile unsigned *)(MEMORY_TOP_ADDRESS + 1);
         break;
       case 'X':
-        asm volatile("mov pc, #0x00080000");
+        asm volatile("mov pc, %0" ::"i"(UTEXT_SECTION_START_ADDRESS));
         break;
     }
   }
