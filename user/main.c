@@ -23,16 +23,16 @@ void printer(void *x) {
 
   switch (ch) {
     case 'n':
-      dummy = *(volatile unsigned *)0;
+      dummy = *(volatile unsigned *)NULL;
       break;
     case 'p':
-      asm volatile("mov pc, #0");
+      asm volatile("mov pc, %0" ::"I"(NULL));
       break;
     case 'd':
-      dummy = *(volatile unsigned *)0x00050000;
+      dummy = *(volatile unsigned *)DATA_SECTION_START_ADDRESS;
       break;
     case 'k':
-      dummy = *(volatile unsigned *)0x00010000;
+      dummy = *(volatile unsigned *)TEXT_SECTION_START_ADDRESS;
       break;
     case 'K':
       dummy = *(volatile unsigned *)IRQ_SP;
@@ -41,14 +41,18 @@ void printer(void *x) {
       dummy = *(volatile unsigned *)UART_BASE;
       break;
     case 'c':
-      *(volatile unsigned *)0x00080000 = 0x1337;
+      *(volatile unsigned *)UTEXT_SECTION_START_ADDRESS = 0x1337;
       break;
-    case 's':
-      *(volatile unsigned *)(&x + 0x00200000) = 0x1337;
+    case 's': {
+      volatile char chonk[STACK_SIZE + 1];
+      for (size_t i = 0; i < sizeof(chonk); i++) {
+        chonk[i] = chonk[sys$get_time() % (STACK_SIZE + 1)];
+      }
+      sys$output_character(chonk[sys$get_time() % (STACK_SIZE + 1)]);
       break;
+    }
     case 'u':
-      // FIXME: heißt Zugriff auf Adresse > 128 MiB
-      dummy = *(volatile unsigned *)(&x + 0x00200000);
+      dummy = *(volatile unsigned *)(MEMORY_TOP_ADDRESS + 1);
       break;
     case 'x':
       asm volatile("mov pc, %0" ::"r"(&x));
