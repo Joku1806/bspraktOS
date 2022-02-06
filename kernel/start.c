@@ -48,10 +48,25 @@ void preview_module_colors() {
 
 void print_menu() {
   kprintf("Willkommen in unserem Betriebssystem!\n"
-          "s: (Thread) Crash auslösen\n"
-          "S: (Kernel) Crash auslösen\n"
-          "Kleinbuchstaben: (Thread) Zeichen mit kleinen nicht-blockierenden Pausen ausgeben\n"
-          "Großbuchstaben: (Thread) Zeichen mit kleinen blockierenden Pausen ausgeben\n\n");
+          "Zugriffsverletzungen (Thread):\n"
+          "n: lesender Zugriff auf Null-Pointer\n"
+          "p: Sprung auf Null-Pointer\n"
+          "d: lesender Zugriff auf Kernel-Daten\n"
+          "k: lesender Zugriff auf Kernel-Code\n"
+          "K: lesender Zugriff auf Kernel-Stack\n"
+          "g: lesender Zugriff auf Peripherie-Geraet\n"
+          "c: schreibender Zugriff auf eigenen Code\n"
+          "s: Stack-Overflow\n"
+          "u: lesender Zugriff auf nicht zugeordnete Adresse\n"
+          "x: Sprung auf eigene Daten\n"
+          "\n"
+          "Zugriffsverletzungen (Kernel):\n"
+          "N: lesender Zugriff auf Null-Pointer\n"
+          "P: Sprung auf Null-Pointer\n"
+          "C: Schreibender Zugriff auf eigenen Code\n"
+          "U: lesender zugriff auf nicht zugeordnete Adresse\n"
+          "X: Sprung auf User Code\n"
+          );
 }
 
 void start_kernel() {
