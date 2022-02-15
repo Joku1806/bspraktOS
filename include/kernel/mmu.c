@@ -2,9 +2,9 @@
 #define LOG_LABEL "MMU Setup"
 
 #include <arch/bsp/memory_map.h>
-#include <arch/cpu/mmu.h>
 #include <kernel/lib/kassertions.h>
 #include <kernel/lib/kdebug.h>
+#include <kernel/mmu.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -60,14 +60,12 @@ l1_type l1_entry_get_type(l1_entry *e) {
 void initialise_l1_table() {
   uint32_t address_range_starts[DISTINCT_SECTIONS_COUNT + 1] = {
       UNASSIGNED0_START_ADDRESS,
-      INIT_SECTION_START_ADDRESS,
-      TEXT_SECTION_START_ADDRESS,
-      BSS_SECTION_START_ADDRESS,
+      INIT_TEXT_SECTION_START_ADDRESS,
       RODATA_SECTION_START_ADDRESS,
-      DATA_SECTION_START_ADDRESS,
+      BSS_DATA_SECTION_START_ADDRESS,
       UTEXT_SECTION_START_ADDRESS,
       URODATA_SECTION_START_ADDRESS,
-      UDATA_SECTION_START_ADDRESS,
+      UBSS_UDATA_SECTION_START_ADDRESS,
       UNASSIGNED1_START_ADDRESS,
       MMIO_DEVICES_START_ADDRESS,
       UNASSIGNED2_START_ADDRESS,
@@ -78,14 +76,12 @@ void initialise_l1_table() {
 
   l1_entry sections[DISTINCT_SECTIONS_COUNT] = {
       {.fault = get_l1_guard_page()},
-      {.section = get_l1_section(INIT_SECTION_START_ADDRESS, KREAD | KEXEC, UNONE)},
-      {.section = get_l1_section(TEXT_SECTION_START_ADDRESS, KREAD | KEXEC, UNONE)},
-      {.section = get_l1_section(BSS_SECTION_START_ADDRESS, KREAD | KWRITE, UNONE)},
+      {.section = get_l1_section(INIT_TEXT_SECTION_START_ADDRESS, KREAD | KEXEC, UNONE)},
       {.section = get_l1_section(RODATA_SECTION_START_ADDRESS, KREAD, UNONE)},
-      {.section = get_l1_section(DATA_SECTION_START_ADDRESS, KREAD | KWRITE, UNONE)},
+      {.section = get_l1_section(BSS_DATA_SECTION_START_ADDRESS, KREAD | KWRITE, UNONE)},
       {.section = get_l1_section(UTEXT_SECTION_START_ADDRESS, KREAD | KWRITE, UREAD | UEXEC)},
       {.section = get_l1_section(URODATA_SECTION_START_ADDRESS, KREAD, UREAD)},
-      {.section = get_l1_section(UDATA_SECTION_START_ADDRESS, KREAD | KWRITE, UREAD | UWRITE)},
+      {.section = get_l1_section(UBSS_UDATA_SECTION_START_ADDRESS, KREAD | KWRITE, UREAD | UWRITE)},
       {.fault = get_l1_guard_page()},
       {.section = get_l1_section(MMIO_DEVICES_START_ADDRESS, KREAD | KWRITE, UNONE)},
       {.fault = get_l1_guard_page()},
