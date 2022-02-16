@@ -1,6 +1,7 @@
 #ifndef MMU_H
 #define MMU_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #define L1_TABLE_SIZE 0x1000
@@ -134,7 +135,12 @@ l2_fault get_l2_guard_page();
 
 void l1_handle_set_table_address(l2_handle *handle, uint32_t table_address);
 l2_handle get_stack_handle(uint32_t l2_table_address);
+l2_entry **get_stack_table_base();
+
+void set_l1_table_entry(size_t index, l1_entry entry);
 
 void mmu_configure();
+void mmu_activate();
+void mmu_deactivate();
 
 #endif

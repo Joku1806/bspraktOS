@@ -11,6 +11,14 @@
 __attribute__((aligned(L1_TABLE_SIZE * sizeof(l1_entry)))) static l1_entry l1_table[L1_TABLE_SIZE];
 __attribute__((aligned(L2_STACK_TABLE_SIZE * sizeof(l2_entry)))) static l2_entry l2_stack_tables[STACK_COUNT][L2_STACK_TABLE_SIZE];
 
+l2_entry **get_stack_table_base() { return l2_stack_tables; }
+
+void set_l1_table_entry(size_t index, l1_entry entry) {
+  VERIFY(index < L1_TABLE_SIZE);
+
+  l1_table[index] = entry;
+}
+
 bool l1_entry_is_section(l1_entry *e) {
   return e->section.pad1_set && !e->section.pad0_unset;
 }
@@ -69,7 +77,6 @@ void initialise_l1_table() {
       UNASSIGNED1_START_ADDRESS,
       MMIO_DEVICES_START_ADDRESS,
       UNASSIGNED2_START_ADDRESS,
-      USER_STACK_BOTTOM_ADDRESS,
       KERNEL_STACK_BOTTOM_ADDRESS,
       MEMORY_TOP_ADDRESS,
   };
@@ -85,7 +92,6 @@ void initialise_l1_table() {
       {.fault = get_l1_guard_page()},
       {.section = get_l1_section(MMIO_DEVICES_START_ADDRESS, KREAD | KWRITE, UNONE)},
       {.fault = get_l1_guard_page()},
-      {.handle = get_stack_handle((uint32_t)l2_stack_tables[0])},
       {.handle = get_stack_handle((uint32_t)l2_stack_tables[0])},
   };
 
@@ -134,6 +140,10 @@ uint32_t SCTRL_deactivate_caches(uint32_t SCTRL) {
 
 uint32_t SCTRL_activate_mmu(uint32_t SCTRL) {
   return SCTRL | 1 << MMU_enable;
+}
+
+uint32_t SCTRL_deactivate_mmu(uint32_t SCTRL) {
+  return SCTRL & ~(1 << MMU_enable);
 }
 
 uint8_t get_AP_bits(kpermissions kp, upermissions up) {
@@ -271,4 +281,20 @@ void mmu_configure() {
       // Instruction und Data Caches deaktivieren, MMU anschalten (SCTLR, Bits C/I/M)
       "mcr p15, 0, %3, c1, c0, 0 \n\t" ::"r"(&l1_table[0]),
       "r"(DACR), "r"(TTBCR), "r"(SCTLR));
+}
+
+void mmu_activate() {
+  uint32_t SCTRL;
+  asm volatile("mrc p15, 0, %0, c1, c0, 0"
+               : "=r"(SCTRL));
+  SCTRL = SCTRL_activate_mmu(SCTRL);
+  asm volatile("mrc p15, 0, %0, c1, c0, 0" ::"r"(SCTRL));
+}
+
+void mmu_deactivate() {
+  uint32_t SCTRL;
+  asm volatile("mrc p15, 0, %0, c1, c0, 0"
+               : "=r"(SCTRL));
+  SCTRL = SCTRL_deactivate_mmu(SCTRL);
+  asm volatile("mrc p15, 0, %0, c1, c0, 0" ::"r"(SCTRL));
 }
