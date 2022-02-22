@@ -102,7 +102,7 @@ void initialise_l1_table() {
       {.section = get_l1_section(UTEXT_SECTION_START_ADDRESS, KREAD | KWRITE, UREAD | UEXEC)},
       {.section = get_l1_section(URODATA_SECTION_START_ADDRESS, KREAD, UREAD)},
       {.section = get_l1_section(UBSS_UDATA_SECTION_START_ADDRESS, KREAD | KWRITE, UREAD | UWRITE)},
-      {.section = get_l1_section(UBSS_UDATA_KERNEL_MAP_START_ADDRESS, KWRITE, UNONE)},
+      {.section = get_l1_section(UBSS_UDATA_KERNEL_MAP_START_ADDRESS, KREAD | KWRITE, UNONE)},
       {.section = get_l1_section(UBSS_UDATA_SECTION_START_ADDRESS, KREAD, UNONE)},
       {.fault = get_l1_guard_page()},
       {.section = get_l1_section(MMIO_DEVICES_START_ADDRESS, KREAD | KWRITE, UNONE)},
