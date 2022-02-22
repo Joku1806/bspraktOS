@@ -6,7 +6,6 @@
 #include <arch/cpu/mission_control.h>
 #include <arch/cpu/psr.h>
 #include <arch/cpu/registers.h>
-#include <kernel/address_spaces.h>
 #include <kernel/lib/kassertions.h>
 #include <kernel/lib/kdebug.h>
 #include <kernel/lib/kintrusive_list.h>
@@ -35,67 +34,81 @@ k_node input_waiting_list = {.previous = NULL, .next = NULL};
 k_node running_list = {.previous = NULL, .next = NULL};
 k_node finished_list = {.previous = NULL, .next = &blocks[1].scheduler_node};
 
-k_node *scheduler_get_idle_thread() { return (k_node *)&blocks[IDLE_THREAD_INDEX].scheduler_node; }
+static k_node address_spaces[ADDRESS_SPACE_COUNT] = {
+    {.previous = NULL, .next = NULL},
+    {.previous = NULL, .next = NULL},
+    {.previous = NULL, .next = NULL},
+    {.previous = NULL, .next = NULL},
+    {.previous = NULL, .next = NULL},
+    {.previous = NULL, .next = NULL},
+    {.previous = NULL, .next = NULL},
+    {.previous = NULL, .next = NULL},
+};
+
+l2_handle process_stack_handles[ADDRESS_SPACE_COUNT][THREADS_PER_ADDRESS_SPACE];
+bool slots_used[ADDRESS_SPACE_COUNT][THREADS_PER_ADDRESS_SPACE];
+
+k_node *scheduler_get_address_space_list(size_t address_space) {
+  VERIFY(address_space < ADDRESS_SPACE_COUNT);
+  return &address_spaces[address_space];
+}
+
+bool scheduler_find_first_empty_address_space(size_t *index) {
+  for (size_t i = 0; i < ADDRESS_SPACE_COUNT; i++) {
+    if (k_is_list_empty(&address_spaces[i])) {
+      *index = i;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool scheduler_find_first_empty_slot_in_address_space(size_t address_space, size_t *index) {
+  for (size_t i = 0; i < THREADS_PER_ADDRESS_SPACE; i++) {
+    if (!slots_used[address_space][i]) {
+      *index = i;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+tcb *scheduler_get_idle_thread() {
+  return &blocks[IDLE_THREAD_INDEX];
+}
+
 tcb *scheduler_get_running_thread() {
   VERIFY(!k_is_list_empty(&running_list));
   return container_of(k_get_first_node(&running_list), tcb, scheduler_node);
 }
 
-void scheduler_reset_thread_context(tcb *thread, size_t pid, size_t tid) {
-  thread->pid = pid;
-  thread->tid = tid;
-  thread->stack_mapping = get_stack_handle((uint32_t)(get_stack_table_base() + scheduler_get_flat_id(pid, tid) * L2_STACK_TABLE_SIZE));
-  thread->cpsr = psr_mode_user;
-  thread->regs.sp = (void *)(USER_STACK_TOP_ADDRESS - scheduler_get_flat_id(pid, tid) * STACK_SIZE);
-  thread->regs.lr = sys$exit_thread;
-  thread->regs.pc = NULL;
-}
-
-void scheduler_reset_idle_thread_context() {
+void scheduler_initialise_idle_thread_context() {
   blocks[IDLE_THREAD_INDEX].pid = ADDRESS_SPACE_COUNT;
-  blocks[IDLE_THREAD_INDEX].tid = 0;
+  blocks[IDLE_THREAD_INDEX].tid = IDLE_THREAD_INDEX;
   blocks[IDLE_THREAD_INDEX].cpsr = psr_mode_system;
   blocks[IDLE_THREAD_INDEX].regs.sp = (void *)IDLE_THREAD_SP;
   blocks[IDLE_THREAD_INDEX].regs.lr = halt_cpu;
   blocks[IDLE_THREAD_INDEX].regs.pc = halt_cpu;
 }
 
-void scheduler_setup_stack_mappings(l2_entry *stack_tables) {
-  for (size_t i = 0; i < USER_THREAD_COUNT; i++) {
-    blocks[i].stack_mapping = get_stack_handle((uint32_t)(stack_tables + i * L2_STACK_TABLE_SIZE));
-  }
-}
-
-void scheduler_segment_flat_id(size_t flat_id, size_t *pid, size_t *tid) {
-  VERIFY(flat_id / THREADS_PER_ADDRESS_SPACE < ADDRESS_SPACE_COUNT);
-  *pid = flat_id / THREADS_PER_ADDRESS_SPACE;
-  *tid = flat_id % THREADS_PER_ADDRESS_SPACE;
-}
-
-size_t scheduler_get_flat_id(size_t pid, size_t tid) {
-  VERIFY(pid < ADDRESS_SPACE_COUNT);
-  VERIFY(tid < THREADS_PER_ADDRESS_SPACE);
-
-  return pid * THREADS_PER_ADDRESS_SPACE + tid;
-}
-
 void scheduler_initialise() {
-  k_node *first_running_thread = &blocks[0].scheduler_node;
-  first_running_thread->previous = first_running_thread;
-  first_running_thread->next = first_running_thread;
-  scheduler_reset_thread_context(&blocks[0], 0, 0);
-  container_of(first_running_thread, tcb, scheduler_node)->regs.pc = user_main;
-
-  for (size_t i = 1; i < USER_THREAD_COUNT; i++) {
+  for (size_t i = 0; i < USER_THREAD_COUNT; i++) {
     k_node *current = &blocks[i].scheduler_node;
-    current->previous = &blocks[k_modulo_sub(i, 1, 1, USER_THREAD_COUNT)].scheduler_node;
-    current->next = &blocks[k_modulo_add(i, 1, 1, USER_THREAD_COUNT)].scheduler_node;
+    current->previous = &blocks[k_modulo_sub(i, 1, 0, USER_THREAD_COUNT)].scheduler_node;
+    current->next = &blocks[k_modulo_add(i, 1, 0, USER_THREAD_COUNT)].scheduler_node;
+
+    tcb *thread = container_of(current, tcb, scheduler_node);
+    thread->stack_handle = get_nth_stack_handle(i);
   }
 
-  k_node *idle_thread = scheduler_get_idle_thread();
-  idle_thread->previous = idle_thread;
-  idle_thread->next = idle_thread;
-  scheduler_reset_idle_thread_context();
+  tcb *idle_thread = scheduler_get_idle_thread();
+  idle_thread->scheduler_node.previous = &idle_thread->scheduler_node;
+  idle_thread->scheduler_node.next = &idle_thread->scheduler_node;
+  scheduler_initialise_idle_thread_context();
+
+  scheduler_create_process(0, user_main, NULL, 0);
 }
 
 void scheduler_save_thread_context(tcb *thread, registers *regs) {
@@ -134,20 +147,26 @@ void scheduler_switch_thread(registers *current_thread_regs, tcb *thread) {
 void scheduler_create_process(size_t address_space, void (*func)(void *), const void *args, unsigned int args_size) {
   VERIFY(!k_is_list_empty(&finished_list));
 
-  mmu_deactivate();
-  k_memcpy(UBSS_UDATA_SECTION_START_ADDRESS + (address_space + 1) * MiB, UBSS_UDATA_SECTION_START_ADDRESS, 1 * MiB);
-  mmu_activate();
+  void *kernel_wmap = (void *)(UBSS_UDATA_SECTION_START_ADDRESS + (address_space + 1) * MiB);
+  void *kernel_rmap = (void *)(UBSS_UDATA_KERNEL_ORIGINAL_MAP_START_ADDRESS);
+  k_memcpy(kernel_wmap, kernel_rmap, 1 * MiB);
 
   k_node *tnode = k_get_first_node(&finished_list);
   tcb *thread = container_of(tnode, tcb, scheduler_node);
 
-  k_append_node_to_list(get_address_space_list(address_space), &thread->addrspace_node);
-  scheduler_reset_thread_context(thread, address_space, 0);
+  k_append_node_to_list(scheduler_get_address_space_list(address_space), &thread->addrspace_node);
+  process_stack_handles[address_space][0] = thread->stack_handle;
+  slots_used[address_space][0] = true;
+
+  thread->pid = address_space;
+  thread->cpsr = psr_mode_user;
+  thread->regs.sp = (void *)(VIRTUAL_PROCESS_STACKS_TOP_ADDRESS);
+  thread->regs.lr = sys$exit_thread;
+  thread->regs.pc = func;
 
   thread->regs.sp -= k_align8(args_size);
   k_memcpy(thread->regs.sp, args, args_size);
   thread->regs.general[0] = (uint32_t)thread->regs.sp;
-  thread->regs.pc = func;
 
   if (k_is_list_empty(&ready_list)) {
     k_transfer_list_node(&finished_list, &ready_list, tnode);
@@ -156,20 +175,25 @@ void scheduler_create_process(size_t address_space, void (*func)(void *), const 
   }
 }
 
-void scheduler_create_thread(tcb *caller, void (*func)(void *), const void *args, unsigned int args_size) {
+void scheduler_create_thread(tcb *caller, size_t process_slot, void (*func)(void *), const void *args, unsigned int args_size) {
   VERIFY(!k_is_list_empty(&finished_list));
-  VERIFY(caller->tid < THREADS_PER_ADDRESS_SPACE - 1);
 
   k_node *tnode = k_get_first_node(&finished_list);
   tcb *thread = container_of(tnode, tcb, scheduler_node);
+  k_append_node_to_list(&address_spaces[caller->pid], &thread->addrspace_node);
 
-  k_append_node_to_list(get_address_space_list(caller->pid), &thread->addrspace_node);
-  scheduler_reset_thread_context(thread, caller->pid, caller->tid + 1);
+  process_stack_handles[caller->pid][process_slot] = thread->stack_handle;
+  slots_used[caller->pid][process_slot] = true;
+
+  thread->pid = caller->pid;
+  thread->cpsr = psr_mode_user;
+  thread->regs.sp = (void *)(VIRTUAL_PROCESS_STACKS_TOP_ADDRESS - process_slot * STACK_SIZE);
+  thread->regs.lr = sys$exit_thread;
+  thread->regs.pc = func;
 
   thread->regs.sp -= k_align8(args_size);
   k_memcpy(thread->regs.sp, args, args_size);
   thread->regs.general[0] = (uint32_t)thread->regs.sp;
-  thread->regs.pc = func;
 
   if (k_is_list_empty(&ready_list)) {
     k_transfer_list_node(&finished_list, &ready_list, tnode);
@@ -182,14 +206,11 @@ void scheduler_cleanup_thread() {
   k_node *me = k_get_first_node(&running_list);
   tcb *thread = container_of(me, tcb, scheduler_node);
 
-  kdbgln("Exiting from thread %u", scheduler_get_flat_id(thread->pid, thread->tid));
+  kdbgln("Exiting from thread with pid = %u, tid = %u.", thread->pid, thread->tid);
 
-  k_remove_node_from_list(get_address_space_list(thread->pid), &thread->addrspace_node);
+  slots_used[thread->pid][thread->pid_slot] = false;
+  k_remove_node_from_list(scheduler_get_address_space_list(thread->pid), &thread->addrspace_node);
   k_transfer_list_node(&running_list, &finished_list, me);
-}
-
-bool scheduler_is_thread_available() {
-  return !k_is_list_empty(&finished_list);
 }
 
 #if CONSTANTLY_VERIFY_THREAD_LIST_INTEGRITY
@@ -218,8 +239,8 @@ void scheduler_verify_thread_list_integrity() {
       VERIFY(current == current->previous->next);
       VERIFY(current == current->next->previous);
       tcb *current_thread = container_of(current, tcb, scheduler_node);
-      VERIFY(!checked[scheduler_get_flat_id(current_thread->pid, current_thread->tid)]);
-      checked[scheduler_get_flat_id(current_thread->pid, current_thread->tid)] = true;
+      VERIFY(!checked[current_thread->tid]);
+      checked[current_thread->tid] = true;
       current = current->next;
     } while (current != start);
 
@@ -261,7 +282,7 @@ void scheduler_ignore_thread_until_timer_match(tcb *thread, unsigned match) {
   if ((k_node *)thread == k_get_first_node(&stall_waiting_list) && scheduler_adjust_stall_timer() < 0) {
     // FIXME: Falls Wert zu klein, wird er einfach in die ready Liste verschoben,
     // sollte man in dem Fall einen Fehler zurückgeben?
-    kwarnln("Could not stall thread %u because systimer already passed interrupt time.", scheduler_get_flat_id(thread->pid, thread->tid));
+    kwarnln("Could not stall thread %u because systimer already passed interrupt time.", thread->tid);
     scheduler_unblock_overdue_waiting_threads();
   }
 }
@@ -307,73 +328,45 @@ int scheduler_adjust_stall_timer() {
   return stalltimer_interrupt_at(container_of(first, tcb, scheduler_node)->stall_until);
 }
 
-void scheduler_round_robin(registers *thread_regs) {
-  if (k_is_list_empty(&ready_list) && !k_is_list_empty(&running_list)) {
+void scheduler_round_robin(registers *thread_regs, scheduling_type type) {
+  if (type != forced && k_is_list_empty(&ready_list) && !k_is_list_empty(&running_list)) {
     kdbgln("No other thread waiting for work, continuing to run current thread.");
     return;
   }
 
   if (k_is_list_empty(&ready_list) && k_is_list_empty(&running_list)) {
-    k_append_node_to_list(&ready_list, scheduler_get_idle_thread());
+    k_append_node_to_list(&ready_list, &scheduler_get_idle_thread()->scheduler_node);
   }
 
+  tcb *running_thread = NULL;
   tcb *next_thread = container_of(k_get_first_node(&ready_list), tcb, scheduler_node);
   kdbgln("Now scheduling thread with pid = %u, tid = %u.", next_thread->pid, next_thread->tid);
   if (!k_is_list_empty(&running_list)) {
-    k_node *running_thread = k_get_first_node(&running_list);
-    k_remove_node_from_list(&running_list, running_thread);
+    running_thread = container_of(k_get_first_node(&running_list), tcb, scheduler_node);
+    k_remove_node_from_list(&running_list, &running_thread->scheduler_node);
 
     if (running_thread != scheduler_get_idle_thread()) {
-      tcb *running_thread_tcb = container_of(running_thread, tcb, scheduler_node);
-      kdbgln("Thread with pid = %u, tid = %u is not done yet, saving context.", running_thread_tcb->pid, running_thread_tcb->tid);
-      k_append_node_to_list(k_get_last_node(&ready_list), running_thread);
-      scheduler_save_thread_context(running_thread_tcb, thread_regs);
+      kdbgln("Thread with pid = %u, tid = %u is not done yet, saving context.", running_thread->pid, running_thread->tid);
+      k_append_node_to_list(k_get_last_node(&ready_list), &running_thread->scheduler_node);
+      scheduler_save_thread_context(running_thread, thread_regs);
+    }
+  }
 
-      l1_entry entry = {.fault = get_l1_guard_page()};
-      set_l1_table_entry(USER_STACK_BOTTOM_ADDRESS / MiB + scheduler_get_flat_id(running_thread_tcb->pid, running_thread_tcb->tid), entry);
+  if (running_thread == NULL || running_thread->pid != next_thread->pid) {
+    uint32_t copy_start = UBSS_UDATA_SECTION_START_ADDRESS + (next_thread->pid + 1) * MiB;
+    l1_section_set_base_address(&get_l1_entry(UBSS_UDATA_SECTION_START_ADDRESS / MiB)->section, copy_start);
+
+    for (size_t i = 0; i < THREADS_PER_ADDRESS_SPACE; i++) {
+      l1_entry entry = {.handle = process_stack_handles[next_thread->pid][i]};
+      set_l1_table_entry(VIRTUAL_PROCESS_STACKS_BOTTOM_ADDRESS / MiB + i, entry);
     }
   }
 
   k_transfer_list_node(&ready_list, &running_list, &next_thread->scheduler_node);
-
-  l1_entry udata_entry = {.section = get_l1_section(UBSS_UDATA_SECTION_START_ADDRESS + (next_thread->pid + 1) * MiB, KREAD | KWRITE, UREAD | UWRITE)};
-  set_l1_table_entry(UBSS_UDATA_SECTION_START_ADDRESS / MiB, udata_entry);
-
-  l1_entry stack_entry = {.handle = next_thread->stack_mapping};
-  set_l1_table_entry(USER_STACK_BOTTOM_ADDRESS / MiB + scheduler_get_flat_id(next_thread->pid, next_thread->tid), stack_entry);
-
-  // TODO: L1 Tabelle in MMU aktualisieren + TLB flushen
-
   scheduler_switch_thread(thread_regs, next_thread);
 
-#if CONSTANTLY_VERIFY_THREAD_LIST_INTEGRITY
-  scheduler_verify_thread_list_integrity();
-#endif
-}
-
-// FIXME: stattdessen mit flag in scheduler_round_robin() machen.
-void scheduler_forced_round_robin(registers *thread_regs) {
-  if (k_is_list_empty(&ready_list)) {
-    k_append_node_to_list(&ready_list, scheduler_get_idle_thread());
-  }
-
-  tcb *first_ready = container_of(k_get_first_node(&ready_list), tcb, scheduler_node);
-  kdbgln("Now scheduling thread with pid = %u, tid = %u.", first_ready->pid, first_ready->tid);
-  if (!k_is_list_empty(&running_list)) {
-    k_node *running_thread = k_get_first_node(&running_list);
-    k_remove_node_from_list(&running_list, running_thread);
-
-    if (running_thread != scheduler_get_idle_thread()) {
-      tcb *running_thread_tcb = container_of(running_thread, tcb, scheduler_node);
-      kdbgln("Thread with pid = %u, tid = %u is not done yet, saving context.", running_thread_tcb->pid, running_thread_tcb->tid);
-      k_append_node_to_list(k_get_last_node(&ready_list), running_thread);
-      scheduler_save_thread_context(running_thread_tcb, thread_regs);
-    }
-  }
-
-  k_node *next_thread = k_get_first_node(&ready_list);
-  k_transfer_list_node(&ready_list, &running_list, next_thread);
-  scheduler_switch_thread(thread_regs, container_of(next_thread, tcb, scheduler_node));
+  // TLBIALL schreiben
+  asm volatile("mcr p15, 0, r0, c8, c7, 0");
 
 #if CONSTANTLY_VERIFY_THREAD_LIST_INTEGRITY
   scheduler_verify_thread_list_integrity();

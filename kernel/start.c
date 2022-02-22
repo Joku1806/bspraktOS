@@ -5,12 +5,12 @@
 #include <arch/bsp/pl001.h>
 #include <arch/bsp/systimer.h>
 #include <arch/cpu/mission_control.h>
-#include <arch/cpu/mmu.h>
 #include <config.h>
 #include <kernel/lib/kdebug.h>
 #include <kernel/lib/kmath.h>
 #include <kernel/lib/kprintf.h>
 #include <kernel/lib/ktiming.h>
+#include <kernel/mmu.h>
 #include <kernel/regcheck.h>
 #include <kernel/scheduler.h>
 #include <stdbool.h>

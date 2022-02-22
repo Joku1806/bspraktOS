@@ -10,6 +10,11 @@ sys$output_character:
   svc #SYSCALL_OUTPUT_CHARACTER_NO
   bx lr
 
+.global sys$create_process
+sys$create_process:
+  svc #SYSCALL_CREATE_PROCESS_NO
+  bx lr
+
 .global sys$create_thread
 sys$create_thread:
   svc #SYSCALL_CREATE_THREAD_NO
@@ -28,4 +33,9 @@ sys$exit_thread:
 .global sys$get_time
 sys$get_time:
   svc #SYSCALL_GET_TIME_NO
+  bx lr
+
+.global sys$get_thread_id
+sys$get_thread_id:
+  svc #SYSCALL_GET_THREAD_ID_NO
   bx lr

@@ -135,9 +135,11 @@ l2_fault get_l2_guard_page();
 
 void l1_handle_set_table_address(l2_handle *handle, uint32_t table_address);
 l2_handle get_stack_handle(uint32_t l2_table_address);
-l2_entry **get_stack_table_base();
+l2_handle get_nth_stack_handle(size_t n);
 
 void set_l1_table_entry(size_t index, l1_entry entry);
+l1_entry *get_l1_entry(size_t index);
+void l1_section_set_base_address(l1_section *s, uint32_t base_address);
 
 void mmu_configure();
 void mmu_activate();

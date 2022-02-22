@@ -12,6 +12,7 @@
 #define SYSCALL_STALL_THREAD_NO 5
 #define SYSCALL_EXIT_THREAD_NO 6
 #define SYSCALL_GET_TIME_NO 7
+#define SYSCALL_GET_THREAD_ID_NO 8
 
 bool is_valid_syscall(void *instruction_address);
 uint32_t get_syscall_no(void *svc_instruction_address);

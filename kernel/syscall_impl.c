@@ -1,7 +1,6 @@
 #include <arch/bsp/memory_map.h>
 #include <arch/bsp/pl001.h>
 #include <arch/bsp/systimer.h>
-#include <kernel/address_spaces.h>
 #include <kernel/lib/kerror.h>
 #include <kernel/lib/ktiming.h>
 #include <kernel/scheduler.h>
@@ -19,7 +18,8 @@ bool is_valid_syscall_no(uint32_t syscall_no) {
          syscall_no == SYSCALL_CREATE_THREAD_NO ||
          syscall_no == SYSCALL_STALL_THREAD_NO ||
          syscall_no == SYSCALL_EXIT_THREAD_NO ||
-         syscall_no == SYSCALL_GET_TIME_NO;
+         syscall_no == SYSCALL_GET_TIME_NO ||
+         syscall_no == SYSCALL_GET_THREAD_ID_NO;
 }
 
 bool is_valid_syscall(void *instruction_address) {
@@ -29,12 +29,9 @@ bool is_valid_syscall(void *instruction_address) {
 
 int dispatch_syscall(registers *regs, uint32_t syscall_no) {
   switch (syscall_no) {
-    // FIXME: erster Thread in Liste kriegt erstes Zeichen,
-    // es sollen nicht alle Threads in der Liste das erste
-    // Zeichen kriegen.
     case SYSCALL_READ_CHARACTER_NO: {
       tcb *calling_thread = scheduler_get_running_thread();
-      scheduler_forced_round_robin(regs);
+      scheduler_round_robin(regs, forced);
       systimer_reset();
       scheduler_ignore_thread_until_character_input(calling_thread);
       return 0;
@@ -56,7 +53,7 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
       }
 
       size_t address_space;
-      if (!find_first_empty_address_space(&address_space)) {
+      if (!scheduler_find_first_empty_address_space(&address_space)) {
         regs->general[0] = -K_EBUSY;
         return 0;
       }
@@ -75,13 +72,14 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
         return 0;
       }
 
-      if (scheduler_get_running_thread()->tid + 1 >= THREADS_PER_ADDRESS_SPACE) {
+      size_t slot;
+      if (!scheduler_find_first_empty_address_space(&slot)) {
         regs->general[0] = -K_EBUSY;
         return 0;
       }
 
       tcb *calling_thread = scheduler_get_running_thread();
-      scheduler_create_thread(calling_thread, func, args, args_size);
+      scheduler_create_thread(calling_thread, slot, func, args, args_size);
       return 0;
     }
 
@@ -89,7 +87,7 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
       unsigned ms = regs->general[0];
 
       tcb *calling_thread = scheduler_get_running_thread();
-      scheduler_forced_round_robin(regs);
+      scheduler_round_robin(regs, forced);
       systimer_reset();
 
       // FIXME: Eigentlich unnötig, da das mit zu kleinen Werten automatisch passiert.
@@ -110,13 +108,18 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
 
     case SYSCALL_EXIT_THREAD_NO: {
       scheduler_cleanup_thread();
-      scheduler_round_robin(regs);
+      scheduler_round_robin(regs, normal);
       systimer_reset();
       return 0;
     }
 
     case SYSCALL_GET_TIME_NO: {
       regs->general[0] = ktiming_hertz_to_milliseconds(systimer_value());
+      return 0;
+    }
+
+    case SYSCALL_GET_THREAD_ID_NO: {
+      regs->general[0] = scheduler_get_running_thread()->tid;
       return 0;
     }
   }

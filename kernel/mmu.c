@@ -5,18 +5,23 @@
 #include <kernel/lib/kassertions.h>
 #include <kernel/lib/kdebug.h>
 #include <kernel/mmu.h>
+#include <kernel/scheduler.h>
 #include <stddef.h>
 #include <stdint.h>
 
 __attribute__((aligned(L1_TABLE_SIZE * sizeof(l1_entry)))) static l1_entry l1_table[L1_TABLE_SIZE];
 __attribute__((aligned(L2_STACK_TABLE_SIZE * sizeof(l2_entry)))) static l2_entry l2_stack_tables[STACK_COUNT][L2_STACK_TABLE_SIZE];
 
-l2_entry **get_stack_table_base() { return l2_stack_tables; }
-
 void set_l1_table_entry(size_t index, l1_entry entry) {
   VERIFY(index < L1_TABLE_SIZE);
 
   l1_table[index] = entry;
+}
+
+l1_entry *get_l1_entry(size_t index) {
+  VERIFY(index < L1_TABLE_SIZE);
+
+  return &l1_table[index];
 }
 
 bool l1_entry_is_section(l1_entry *e) {
@@ -26,6 +31,10 @@ bool l1_entry_is_section(l1_entry *e) {
 void l1_section_set_base_address(l1_section *s, uint32_t base_address) {
   VERIFY(base_address % MiB == 0);
   s->base_address = base_address / MiB;
+}
+
+l2_handle get_nth_stack_handle(size_t n) {
+  return get_stack_handle((uint32_t)l2_stack_tables[n]);
 }
 
 void initialise_l2_stack_tables() {
@@ -74,9 +83,13 @@ void initialise_l1_table() {
       UTEXT_SECTION_START_ADDRESS,
       URODATA_SECTION_START_ADDRESS,
       UBSS_UDATA_SECTION_START_ADDRESS,
+      UBSS_UDATA_KERNEL_MAP_START_ADDRESS,
+      UBSS_UDATA_KERNEL_ORIGINAL_MAP_START_ADDRESS,
       UNASSIGNED1_START_ADDRESS,
       MMIO_DEVICES_START_ADDRESS,
       UNASSIGNED2_START_ADDRESS,
+      VIRTUAL_PROCESS_STACKS_BOTTOM_ADDRESS,
+      USER_STACK_KERNEL_ONLY_MAPPING_START_ADDRESS,
       KERNEL_STACK_BOTTOM_ADDRESS,
       MEMORY_TOP_ADDRESS,
   };
@@ -89,9 +102,13 @@ void initialise_l1_table() {
       {.section = get_l1_section(UTEXT_SECTION_START_ADDRESS, KREAD | KWRITE, UREAD | UEXEC)},
       {.section = get_l1_section(URODATA_SECTION_START_ADDRESS, KREAD, UREAD)},
       {.section = get_l1_section(UBSS_UDATA_SECTION_START_ADDRESS, KREAD | KWRITE, UREAD | UWRITE)},
+      {.section = get_l1_section(UBSS_UDATA_KERNEL_MAP_START_ADDRESS, KWRITE, UNONE)},
+      {.section = get_l1_section(UBSS_UDATA_SECTION_START_ADDRESS, KREAD, UNONE)},
       {.fault = get_l1_guard_page()},
       {.section = get_l1_section(MMIO_DEVICES_START_ADDRESS, KREAD | KWRITE, UNONE)},
       {.fault = get_l1_guard_page()},
+      {.handle = get_stack_handle((uint32_t)l2_stack_tables[0])},
+      {.section = get_l1_section(USER_STACK_KERNEL_ONLY_MAPPING_START_ADDRESS, KREAD | KWRITE, UNONE)},
       {.handle = get_stack_handle((uint32_t)l2_stack_tables[0])},
   };
 
@@ -106,9 +123,11 @@ void initialise_l1_table() {
           l1_section_set_base_address(&(template.section), j);
           break;
         case handle: {
-          size_t stack_index = (j - USER_STACK_BOTTOM_ADDRESS) / MiB;
-          VERIFY(stack_index < STACK_COUNT);
-          l1_handle_set_table_address(&(template.handle), (uint32_t)l2_stack_tables[stack_index]);
+          if (j >= KERNEL_STACK_BOTTOM_ADDRESS) {
+            size_t stack_index = (j - USER_STACK_BOTTOM_ADDRESS) / STACK_SIZE;
+            VERIFY(stack_index < STACK_COUNT);
+            l1_handle_set_table_address(&(template.handle), (uint32_t)l2_stack_tables[stack_index]);
+          }
           break;
         }
       };

@@ -91,31 +91,12 @@ void irq_interrupt_handler(registers *regs) {
   }
 
   if (systimer_pending()) {
-    scheduler_round_robin(regs);
+    scheduler_round_robin(regs, normal);
     systimer_reset();
   }
 
   if (*peripherals_register(IRQ_pending_2) & UART_pending) {
     pl001_receive();
-
-    volatile unsigned dummy;
-    switch (pl001_peek_newest()) {
-      case 'N':
-        dummy = *(volatile unsigned *)NULL;
-        break;
-      case 'P':
-        asm volatile("mov pc, %0" ::"I"(NULL));
-        break;
-      case 'C':
-        *(volatile unsigned *)TEXT_SECTION_START_ADDRESS = 0x1337;
-        break;
-      case 'U':
-        dummy = *(volatile unsigned *)(MEMORY_TOP_ADDRESS + 1);
-        break;
-      case 'X':
-        asm volatile("mov pc, %0" ::"i"(UTEXT_SECTION_START_ADDRESS));
-        break;
-    }
   }
 
   while (scheduler_exists_input_waiting_thread() && pl001_has_unread_character()) {
