@@ -99,13 +99,21 @@ void scheduler_initialise() {
     current->previous = &blocks[k_modulo_sub(i, 1, 0, USER_THREAD_COUNT)].scheduler_node;
     current->next = &blocks[k_modulo_add(i, 1, 0, USER_THREAD_COUNT)].scheduler_node;
 
-    tcb *thread = container_of(current, tcb, scheduler_node);
-    thread->stack_handle = get_nth_stack_handle(i);
+    k_node *addrspace_node = &blocks[i].addrspace_node;
+    addrspace_node->previous = addrspace_node;
+    addrspace_node->next = addrspace_node;
+
+    blocks[i].stack_handle = get_nth_stack_handle(i);
   }
 
   tcb *idle_thread = scheduler_get_idle_thread();
+
   idle_thread->scheduler_node.previous = &idle_thread->scheduler_node;
   idle_thread->scheduler_node.next = &idle_thread->scheduler_node;
+
+  idle_thread->addrspace_node.previous = &idle_thread->addrspace_node;
+  idle_thread->addrspace_node.next = &idle_thread->addrspace_node;
+
   scheduler_initialise_idle_thread_context();
 
   scheduler_create_process(0, user_main, NULL, 0);
@@ -180,7 +188,7 @@ void scheduler_create_thread(tcb *caller, size_t process_slot, void (*func)(void
 
   k_node *tnode = k_get_first_node(&finished_list);
   tcb *thread = container_of(tnode, tcb, scheduler_node);
-  k_append_node_to_list(&address_spaces[caller->pid], &thread->addrspace_node);
+  k_append_node_to_list(scheduler_get_address_space_list(caller->pid), &thread->addrspace_node);
 
   process_stack_handles[caller->pid][process_slot] = thread->stack_handle;
   slots_used[caller->pid][process_slot] = true;
@@ -238,8 +246,11 @@ void scheduler_verify_thread_list_integrity() {
       VERIFY(k_is_list_node(current));
       VERIFY(current == current->previous->next);
       VERIFY(current == current->next->previous);
+
       tcb *current_thread = container_of(current, tcb, scheduler_node);
+      VERIFY(current_thread->tid < USER_THREAD_COUNT);
       VERIFY(!checked[current_thread->tid]);
+
       checked[current_thread->tid] = true;
       current = current->next;
     } while (current != start);
