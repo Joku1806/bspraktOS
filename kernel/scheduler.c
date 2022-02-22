@@ -28,11 +28,11 @@ __attribute__((weak)) void sys$exit_thread() {
 
 static tcb blocks[THREAD_COUNT];
 
-k_node ready_list = {.previous = NULL, .next = &blocks[0].scheduler_node};
+k_node ready_list = {.previous = NULL, .next = NULL};
 k_node stall_waiting_list = {.previous = NULL, .next = NULL};
 k_node input_waiting_list = {.previous = NULL, .next = NULL};
 k_node running_list = {.previous = NULL, .next = NULL};
-k_node finished_list = {.previous = NULL, .next = &blocks[1].scheduler_node};
+k_node finished_list = {.previous = NULL, .next = &blocks[0].scheduler_node};
 
 static k_node address_spaces[ADDRESS_SPACE_COUNT] = {
     {.previous = NULL, .next = NULL},
@@ -103,6 +103,7 @@ void scheduler_initialise() {
     addrspace_node->previous = addrspace_node;
     addrspace_node->next = addrspace_node;
 
+    blocks[i].tid = i;
     blocks[i].stack_handle = get_nth_stack_handle(i);
   }
 
@@ -248,7 +249,7 @@ void scheduler_verify_thread_list_integrity() {
       VERIFY(current == current->next->previous);
 
       tcb *current_thread = container_of(current, tcb, scheduler_node);
-      VERIFY(current_thread->tid < USER_THREAD_COUNT);
+      VERIFY(current_thread->tid < THREAD_COUNT);
       VERIFY(!checked[current_thread->tid]);
 
       checked[current_thread->tid] = true;
