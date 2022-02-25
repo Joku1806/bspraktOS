@@ -197,13 +197,17 @@ void scheduler_create_thread(tcb *caller, size_t process_slot, void (*func)(void
 
   thread->pid = caller->pid;
   thread->cpsr = psr_mode_user;
-  thread->regs.sp = (void *)(VIRTUAL_PROCESS_STACKS_TOP_ADDRESS - process_slot * STACK_SIZE);
+
+  thread->regs.sp = (void *)(VIRTUAL_PROCESS_STACKS_TOP_ADDRESS - process_slot * STACK_SIZE) -
+                    k_align8(args_size);
+  thread->regs.general[0] = (uint32_t)thread->regs.sp;
+
   thread->regs.lr = sys$exit_thread;
   thread->regs.pc = func;
 
-  thread->regs.sp -= k_align8(args_size);
-  k_memcpy(thread->regs.sp, args, args_size);
-  thread->regs.general[0] = (uint32_t)thread->regs.sp;
+  void *real_sp = (void *)(USER_STACK_KERNEL_ONLY_MAPPING_START_ADDRESS + (thread->tid + 1) * MiB -
+                           k_align8(args_size));
+  k_memcpy(real_sp, args, args_size);
 
   if (k_is_list_empty(&ready_list)) {
     k_transfer_list_node(&finished_list, &ready_list, tnode);
