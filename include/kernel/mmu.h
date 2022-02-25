@@ -133,7 +133,7 @@ l1_fault get_l1_guard_page();
 l2_small_page get_l2_small_page(uint32_t physical_base, kpermissions kp, upermissions up);
 l2_fault get_l2_guard_page();
 
-void l1_handle_set_table_address(l2_handle *handle, uint32_t table_address);
+void l2_handle_set_table_address(l2_handle *handle, uint32_t table_address);
 l2_handle get_stack_handle(uint32_t l2_table_address);
 l2_handle get_nth_stack_handle(size_t n);
 
