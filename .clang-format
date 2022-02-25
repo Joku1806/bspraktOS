@@ -2,5 +2,5 @@
 Language: Cpp
 BasedOnStyle: LLVM
 AllowShortBlocksOnASingleLine: Empty
-ColumnLimit: 0
+ColumnLimit: 100
 IndentCaseLabels: true
