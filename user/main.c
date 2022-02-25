@@ -1,4 +1,4 @@
-#define LOG_LEVEL WARNING_LEVEL
+#define LOG_LEVEL DEBUG_LEVEL
 #define LOG_LABEL "Userthread"
 
 #define GLOBAL_COUNTER_LIMIT 150
@@ -22,14 +22,17 @@ void thread_main() {
     global_counter++;
     local_counter++;
 
-    printf("%c:%u (%u:%u)", global_ch, global_counter, sys$get_thread_id(), local_counter);
+    printf("%c:%u (%u:%u)\n", global_ch, global_counter, sys$get_thread_id(), local_counter);
 
     sys$stall_thread(SLEEP_TIME_MS);
   }
 }
 
 void process_main(void *args) {
+  char ch = *(char *)args;
   global_ch = *(char *)args;
+  dbgln("process_main: ch (local) = %c, ch (global) = %c, global_counter = %u.", ch, global_ch,
+        global_counter);
 
   sys$create_thread(thread_main, NULL, 0);
   sys$create_thread(thread_main, NULL, 0);
