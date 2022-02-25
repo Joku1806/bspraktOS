@@ -12,14 +12,10 @@ uint32_t get_syscall_no(void *svc_instruction_address) {
 }
 
 bool is_valid_syscall_no(uint32_t syscall_no) {
-  return syscall_no == SYSCALL_READ_CHARACTER_NO ||
-         syscall_no == SYSCALL_OUTPUT_CHARACTER_NO ||
-         syscall_no == SYSCALL_CREATE_PROCESS_NO ||
-         syscall_no == SYSCALL_CREATE_THREAD_NO ||
-         syscall_no == SYSCALL_STALL_THREAD_NO ||
-         syscall_no == SYSCALL_EXIT_THREAD_NO ||
-         syscall_no == SYSCALL_GET_TIME_NO ||
-         syscall_no == SYSCALL_GET_THREAD_ID_NO;
+  return syscall_no == SYSCALL_READ_CHARACTER_NO || syscall_no == SYSCALL_OUTPUT_CHARACTER_NO ||
+         syscall_no == SYSCALL_CREATE_PROCESS_NO || syscall_no == SYSCALL_CREATE_THREAD_NO ||
+         syscall_no == SYSCALL_STALL_THREAD_NO || syscall_no == SYSCALL_EXIT_THREAD_NO ||
+         syscall_no == SYSCALL_GET_TIME_NO || syscall_no == SYSCALL_GET_THREAD_ID_NO;
 }
 
 bool is_valid_syscall(void *instruction_address) {

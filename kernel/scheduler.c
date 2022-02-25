@@ -389,10 +389,6 @@ void scheduler_round_robin(registers *thread_regs, scheduling_type type) {
 
     for (size_t i = 0; i < THREADS_PER_ADDRESS_SPACE; i++) {
       l1_entry entry = {.handle = process_stack_handles[next_thread->pid][i]};
-      kdbgln("Writing stack handle for thread %u: %#010x into l1_table[%u] (currently %#010x)", i,
-             process_stack_handles[next_thread->pid][i],
-             VIRTUAL_PROCESS_STACKS_TOP_ADDRESS / MiB - (i + 1),
-             get_l1_entry(VIRTUAL_PROCESS_STACKS_TOP_ADDRESS / MiB - (i + 1))->packed);
       set_l1_table_entry(VIRTUAL_PROCESS_STACKS_TOP_ADDRESS / MiB - (i + 1), entry);
     }
   }
