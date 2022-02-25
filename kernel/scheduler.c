@@ -160,11 +160,14 @@ void scheduler_create_process(size_t address_space, void (*func)(void *), const 
   k_node *tnode = k_get_first_node(&finished_list);
   tcb *thread = container_of(tnode, tcb, scheduler_node);
 
+  kdbgln("Assigning thread %u to address space %u, slot %u.", thread->tid, address_space, 0);
+
   k_append_node_to_list(scheduler_get_address_space_list(address_space), &thread->addrspace_node);
   process_stack_handles[address_space][0] = thread->stack_handle;
   slots_used[address_space][0] = true;
 
   thread->pid = address_space;
+  thread->pid_slot = 0;
   thread->cpsr = psr_mode_user;
 
   thread->regs.sp = (void *)(VIRTUAL_PROCESS_STACKS_TOP_ADDRESS - k_align8(args_size));
@@ -190,12 +193,17 @@ void scheduler_create_thread(tcb *caller, size_t process_slot, void (*func)(void
 
   k_node *tnode = k_get_first_node(&finished_list);
   tcb *thread = container_of(tnode, tcb, scheduler_node);
+
+  kdbgln("Assigning thread %u to address space %u, slot %u.", thread->tid, caller->pid,
+         process_slot);
+
   k_append_node_to_list(scheduler_get_address_space_list(caller->pid), &thread->addrspace_node);
 
   process_stack_handles[caller->pid][process_slot] = thread->stack_handle;
   slots_used[caller->pid][process_slot] = true;
 
   thread->pid = caller->pid;
+  thread->pid_slot = process_slot;
   thread->cpsr = psr_mode_user;
 
   thread->regs.sp = (void *)(VIRTUAL_PROCESS_STACKS_TOP_ADDRESS - process_slot * STACK_SIZE) -

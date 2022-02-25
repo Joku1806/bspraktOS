@@ -72,13 +72,13 @@ int dispatch_syscall(registers *regs, uint32_t syscall_no) {
         return 0;
       }
 
+      tcb *calling_thread = scheduler_get_running_thread();
       size_t slot;
-      if (!scheduler_find_first_empty_address_space(&slot)) {
+      if (!scheduler_find_first_empty_slot_in_address_space(calling_thread->pid, &slot)) {
         regs->general[0] = -K_EBUSY;
         return 0;
       }
 
-      tcb *calling_thread = scheduler_get_running_thread();
       scheduler_create_thread(calling_thread, slot, func, args, args_size);
       return 0;
     }
