@@ -18,9 +18,7 @@
 
 bool scheduler_stall_cmp(k_node *a, k_node *b);
 
-__attribute__((weak)) void user_main() {
-  kpanicln("Could not link to real user_main().");
-}
+__attribute__((weak)) void user_main() { kpanicln("Could not link to real user_main()."); }
 
 __attribute__((weak)) void sys$exit_thread() {
   kpanicln("Could not link to real sys$exit_thread().");
@@ -35,14 +33,10 @@ k_node running_list = {.previous = NULL, .next = NULL};
 k_node finished_list = {.previous = NULL, .next = &blocks[0].scheduler_node};
 
 static k_node address_spaces[ADDRESS_SPACE_COUNT] = {
-    {.previous = NULL, .next = NULL},
-    {.previous = NULL, .next = NULL},
-    {.previous = NULL, .next = NULL},
-    {.previous = NULL, .next = NULL},
-    {.previous = NULL, .next = NULL},
-    {.previous = NULL, .next = NULL},
-    {.previous = NULL, .next = NULL},
-    {.previous = NULL, .next = NULL},
+    {.previous = NULL, .next = NULL}, {.previous = NULL, .next = NULL},
+    {.previous = NULL, .next = NULL}, {.previous = NULL, .next = NULL},
+    {.previous = NULL, .next = NULL}, {.previous = NULL, .next = NULL},
+    {.previous = NULL, .next = NULL}, {.previous = NULL, .next = NULL},
 };
 
 l2_handle process_stack_handles[ADDRESS_SPACE_COUNT][THREADS_PER_ADDRESS_SPACE];
@@ -75,15 +69,16 @@ bool scheduler_find_first_empty_slot_in_address_space(size_t address_space, size
   return false;
 }
 
-tcb *scheduler_get_idle_thread() {
-  return &blocks[IDLE_THREAD_INDEX];
-}
+tcb *scheduler_get_idle_thread() { return &blocks[IDLE_THREAD_INDEX]; }
 
 tcb *scheduler_get_running_thread() {
   VERIFY(!k_is_list_empty(&running_list));
   return container_of(k_get_first_node(&running_list), tcb, scheduler_node);
 }
 
+// FIXME: idle Thread sollte nicht Teil von irgendeinem Addressraum sein,
+// weil er seinen eigenen Stack hat und ein Kernel-Prozess ist.
+// Müsste dafür Spezialfall in scheduler_round_robin() geben.
 void scheduler_initialise_idle_thread_context() {
   blocks[IDLE_THREAD_INDEX].pid = ADDRESS_SPACE_COUNT;
   blocks[IDLE_THREAD_INDEX].tid = IDLE_THREAD_INDEX;
@@ -139,7 +134,8 @@ void scheduler_switch_thread(registers *current_thread_regs, tcb *thread) {
   // generelle Register sowie lr(_irq) mit unserer Startfunktion
   // überschreiben, weil am Ende des Interrupthandlers pc auf lr(_irq) gesetzt
   // wird.
-  k_memcpy(&current_thread_regs->general, (void *)thread->regs.general, sizeof(thread->regs.general));
+  k_memcpy(&current_thread_regs->general, (void *)thread->regs.general,
+           sizeof(thread->regs.general));
   current_thread_regs->lr = thread->regs.pc;
 
   // Usermode in spsr schreiben, damit am Ende des Interrupthandlers durch
@@ -153,7 +149,8 @@ void scheduler_switch_thread(registers *current_thread_regs, tcb *thread) {
                : "memory");
 }
 
-void scheduler_create_process(size_t address_space, void (*func)(void *), const void *args, unsigned int args_size) {
+void scheduler_create_process(size_t address_space, void (*func)(void *), const void *args,
+                              unsigned int args_size) {
   VERIFY(!k_is_list_empty(&finished_list));
 
   void *kernel_wmap = (void *)(UBSS_UDATA_SECTION_START_ADDRESS + (address_space + 1) * MiB);
@@ -169,13 +166,16 @@ void scheduler_create_process(size_t address_space, void (*func)(void *), const 
 
   thread->pid = address_space;
   thread->cpsr = psr_mode_user;
-  thread->regs.sp = (void *)(VIRTUAL_PROCESS_STACKS_TOP_ADDRESS);
+
+  thread->regs.sp = (void *)(VIRTUAL_PROCESS_STACKS_TOP_ADDRESS - k_align8(args_size));
+  thread->regs.general[0] = (uint32_t)thread->regs.sp;
+
   thread->regs.lr = sys$exit_thread;
   thread->regs.pc = func;
 
-  thread->regs.sp -= k_align8(args_size);
-  k_memcpy(thread->regs.sp, args, args_size);
-  thread->regs.general[0] = (uint32_t)thread->regs.sp;
+  void *real_sp = (void *)(USER_STACK_KERNEL_ONLY_MAPPING_START_ADDRESS + (thread->tid + 1) * MiB -
+                           k_align8(args_size));
+  k_memcpy(real_sp, args, args_size);
 
   if (k_is_list_empty(&ready_list)) {
     k_transfer_list_node(&finished_list, &ready_list, tnode);
@@ -184,7 +184,8 @@ void scheduler_create_process(size_t address_space, void (*func)(void *), const 
   }
 }
 
-void scheduler_create_thread(tcb *caller, size_t process_slot, void (*func)(void *), const void *args, unsigned int args_size) {
+void scheduler_create_thread(tcb *caller, size_t process_slot, void (*func)(void *),
+                             const void *args, unsigned int args_size) {
   VERIFY(!k_is_list_empty(&finished_list));
 
   k_node *tnode = k_get_first_node(&finished_list);
@@ -224,12 +225,15 @@ void scheduler_cleanup_thread() {
 
 #if CONSTANTLY_VERIFY_THREAD_LIST_INTEGRITY
 void scheduler_verify_thread_list_integrity() {
-  VERIFY(&stall_waiting_list != &running_list && &stall_waiting_list != &ready_list && &stall_waiting_list != &input_waiting_list && &stall_waiting_list != &finished_list);
-  VERIFY(&running_list != &ready_list && &running_list != &input_waiting_list && &running_list != &finished_list);
+  VERIFY(&stall_waiting_list != &running_list && &stall_waiting_list != &ready_list &&
+         &stall_waiting_list != &input_waiting_list && &stall_waiting_list != &finished_list);
+  VERIFY(&running_list != &ready_list && &running_list != &input_waiting_list &&
+         &running_list != &finished_list);
   VERIFY(&ready_list != &input_waiting_list && &ready_list != &finished_list);
   VERIFY(&input_waiting_list != &finished_list);
 
-  k_node *lists[5] = {&running_list, &ready_list, &input_waiting_list, &stall_waiting_list, &finished_list};
+  k_node *lists[5] = {&running_list, &ready_list, &input_waiting_list, &stall_waiting_list,
+                      &finished_list};
   bool checked[THREAD_COUNT];
   for (size_t i = 0; i < THREAD_COUNT; i++) {
     checked[i] = false;
@@ -282,7 +286,8 @@ void scheduler_ignore_thread_until_character_input(tcb *thread) {
 }
 
 bool scheduler_stall_cmp(k_node *a, k_node *b) {
-  return container_of(a, tcb, scheduler_node)->stall_until <= container_of(b, tcb, scheduler_node)->stall_until;
+  return container_of(a, tcb, scheduler_node)->stall_until <=
+         container_of(b, tcb, scheduler_node)->stall_until;
 }
 
 void scheduler_ignore_thread_until_timer_match(tcb *thread, unsigned match) {
@@ -291,17 +296,17 @@ void scheduler_ignore_thread_until_timer_match(tcb *thread, unsigned match) {
   thread->stall_until = systimer_value() + match;
   k_insert_sorted(&stall_waiting_list, (k_node *)thread, scheduler_stall_cmp);
 
-  if ((k_node *)thread == k_get_first_node(&stall_waiting_list) && scheduler_adjust_stall_timer() < 0) {
+  if ((k_node *)thread == k_get_first_node(&stall_waiting_list) &&
+      scheduler_adjust_stall_timer() < 0) {
     // FIXME: Falls Wert zu klein, wird er einfach in die ready Liste verschoben,
     // sollte man in dem Fall einen Fehler zurückgeben?
-    kwarnln("Could not stall thread %u because systimer already passed interrupt time.", thread->tid);
+    kwarnln("Could not stall thread %u because systimer already passed interrupt time.",
+            thread->tid);
     scheduler_unblock_overdue_waiting_threads();
   }
 }
 
-bool scheduler_exists_input_waiting_thread() {
-  return !k_is_list_empty(&input_waiting_list);
-}
+bool scheduler_exists_input_waiting_thread() { return !k_is_list_empty(&input_waiting_list); }
 
 void scheduler_unblock_first_input_waiting_thread(char ch) {
   k_node *first = k_get_first_node(&input_waiting_list);
@@ -346,7 +351,7 @@ void scheduler_round_robin(registers *thread_regs, scheduling_type type) {
     return;
   }
 
-  if (k_is_list_empty(&ready_list) && k_is_list_empty(&running_list)) {
+  if (k_is_list_empty(&ready_list)) {
     k_append_node_to_list(&ready_list, &scheduler_get_idle_thread()->scheduler_node);
   }
 
@@ -358,7 +363,8 @@ void scheduler_round_robin(registers *thread_regs, scheduling_type type) {
     k_remove_node_from_list(&running_list, &running_thread->scheduler_node);
 
     if (running_thread != scheduler_get_idle_thread()) {
-      kdbgln("Thread with pid = %u, tid = %u is not done yet, saving context.", running_thread->pid, running_thread->tid);
+      kdbgln("Thread with pid = %u, tid = %u is not done yet, saving context.", running_thread->pid,
+             running_thread->tid);
       k_append_node_to_list(k_get_last_node(&ready_list), &running_thread->scheduler_node);
       scheduler_save_thread_context(running_thread, thread_regs);
     }
@@ -366,11 +372,16 @@ void scheduler_round_robin(registers *thread_regs, scheduling_type type) {
 
   if (running_thread == NULL || running_thread->pid != next_thread->pid) {
     uint32_t copy_start = UBSS_UDATA_SECTION_START_ADDRESS + (next_thread->pid + 1) * MiB;
-    l1_section_set_base_address(&get_l1_entry(UBSS_UDATA_SECTION_START_ADDRESS / MiB)->section, copy_start);
+    l1_section_set_base_address(&get_l1_entry(UBSS_UDATA_SECTION_START_ADDRESS / MiB)->section,
+                                copy_start);
 
     for (size_t i = 0; i < THREADS_PER_ADDRESS_SPACE; i++) {
       l1_entry entry = {.handle = process_stack_handles[next_thread->pid][i]};
-      set_l1_table_entry(VIRTUAL_PROCESS_STACKS_BOTTOM_ADDRESS / MiB + i, entry);
+      kdbgln("Writing stack handle for thread %u: %#010x into l1_table[%u] (currently %#010x)", i,
+             process_stack_handles[next_thread->pid][i],
+             VIRTUAL_PROCESS_STACKS_TOP_ADDRESS / MiB - (i + 1),
+             get_l1_entry(VIRTUAL_PROCESS_STACKS_TOP_ADDRESS / MiB - (i + 1))->packed);
+      set_l1_table_entry(VIRTUAL_PROCESS_STACKS_TOP_ADDRESS / MiB - (i + 1), entry);
     }
   }
 
